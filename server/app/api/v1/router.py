@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from loguru import logger
 from redis.exceptions import RedisError
 
-from app.api.v1 import api_keys, auth
+from app.api.v1 import api_keys, auth, memory
+from app.api.responses import StandardResponse, success
 from app.config import get_settings
 from app.middleware.context import RequestContext, require_auth
 
@@ -11,10 +12,11 @@ router = APIRouter()
 # Include routers
 router.include_router(auth.router)
 router.include_router(api_keys.router)
+router.include_router(memory.router)
 
 
-@router.get("/health")
-async def health_check():
+@router.get("/health", response_model=StandardResponse[dict])
+async def health_check(request: Request):
     """
     Health check endpoint.
     
@@ -49,16 +51,17 @@ async def health_check():
     
     logger.debug("Health check requested", redis_status=redis_status)
     
-    return {
+    return success({
         "status": "ok",
         "environment": settings.environment,
         "version": "0.1.0",
         "redis_status": redis_status,
-    }
+    }, request_id=request.state.request_id)
 
 
-@router.get("/me")
+@router.get("/me", response_model=StandardResponse[dict])
 async def get_current_context_info(
+    request: Request,
     ctx: RequestContext = Depends(require_auth),
 ):
     """
@@ -78,10 +81,9 @@ async def get_current_context_info(
         auth_method=ctx.auth_method,
     )
     
-    return {
-        "request_id": ctx.request_id,
+    return success({
         "org_id": str(ctx.org_id),
         "user_id": str(ctx.user_id) if ctx.user_id else None,
         "agent_id": str(ctx.agent_id) if ctx.agent_id else None,
         "auth_method": ctx.auth_method,
-    }
+    }, request_id=request.state.request_id)

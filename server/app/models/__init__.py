@@ -2,6 +2,7 @@
 
 from app.models.agent import Agent
 from app.models.api_key import APIKey
+from app.models.audit_log import AuditLog
 from app.models.embedding import Embedding
 from app.models.episode import Episode
 from app.models.memory_fact import MemoryFact
@@ -13,6 +14,7 @@ from app.models.user import User
 __all__ = [
     "Agent",
     "APIKey",
+    "AuditLog",
     "Embedding",
     "Episode",
     "MemoryFact",

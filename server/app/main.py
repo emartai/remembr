@@ -11,8 +11,19 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.api.responses import error
 from app.api.v1.router import router as v1_router
 from app.config import get_settings
+from app.error_codes import INTERNAL_ERROR, VALIDATION_ERROR
+from app.exceptions import (
+    AuthenticationError,
+    AuthorizationError,
+    ConflictError,
+    NotFoundError,
+    RateLimitError,
+    RemembrException,
+    ValidationError,
+)
 
 
 def configure_logging() -> None:
@@ -148,72 +159,93 @@ def create_app() -> FastAPI:
             return response
     
     # Global exception handlers
-    @app.exception_handler(StarletteHTTPException)
-    async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+    @app.exception_handler(RemembrException)
+    async def remembr_exception_handler(request: Request, exc: RemembrException):
         request_id = getattr(request.state, "request_id", "unknown")
-        
         logger.warning(
-            "HTTP exception",
+            "Application exception",
             request_id=request_id,
+            code=exc.code,
             status_code=exc.status_code,
-            detail=exc.detail,
+            message=exc.message,
         )
-        
-        return JSONResponse(
+        return error(
+            code=exc.code,
+            message=exc.message,
             status_code=exc.status_code,
-            content={
-                "error": {
-                    "code": f"HTTP_{exc.status_code}",
-                    "message": exc.detail,
-                    "request_id": request_id,
-                }
-            },
+            request_id=request_id,
+            details=exc.details,
         )
-    
+
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
         request_id = getattr(request.state, "request_id", "unknown")
-        
-        logger.warning(
-            "Validation error",
-            request_id=request_id,
-            errors=exc.errors(),
-        )
-        
-        return JSONResponse(
+        logger.warning("Validation error", request_id=request_id, errors=exc.errors())
+        return error(
+            code=VALIDATION_ERROR,
+            message="Request validation failed",
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            content={
-                "error": {
-                    "code": "VALIDATION_ERROR",
-                    "message": "Request validation failed",
-                    "request_id": request_id,
-                    "details": exc.errors(),
-                }
-            },
+            request_id=request_id,
+            details={"errors": exc.errors()},
         )
-    
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+        request_id = getattr(request.state, "request_id", "unknown")
+        logger.warning(
+            "HTTP exception", request_id=request_id, status_code=exc.status_code, detail=exc.detail
+        )
+        mapped: RemembrException
+        if exc.status_code == status.HTTP_401_UNAUTHORIZED:
+            mapped = AuthenticationError(str(exc.detail))
+        elif exc.status_code == status.HTTP_403_FORBIDDEN:
+            mapped = AuthorizationError(str(exc.detail))
+        elif exc.status_code == status.HTTP_404_NOT_FOUND:
+            mapped = NotFoundError(str(exc.detail))
+        elif exc.status_code == status.HTTP_409_CONFLICT:
+            mapped = ConflictError(str(exc.detail))
+        elif exc.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY:
+            mapped = ValidationError(str(exc.detail))
+        elif exc.status_code == status.HTTP_429_TOO_MANY_REQUESTS:
+            mapped = RateLimitError(str(exc.detail))
+        else:
+            mapped = RemembrException(str(exc.detail))
+            mapped.status_code = exc.status_code
+            mapped.code = f"HTTP_{exc.status_code}"
+
+        return error(
+            code=mapped.code,
+            message=mapped.message,
+            status_code=mapped.status_code,
+            request_id=request_id,
+            details=mapped.details,
+        )
+
+    from sqlalchemy.exc import IntegrityError
+
+    @app.exception_handler(IntegrityError)
+    async def integrity_error_handler(request: Request, exc: IntegrityError):
+        request_id = getattr(request.state, "request_id", "unknown")
+        logger.warning("Integrity error", request_id=request_id, error=str(exc))
+        mapped = ConflictError("Resource conflict")
+        return error(
+            code=mapped.code,
+            message=mapped.message,
+            status_code=mapped.status_code,
+            request_id=request_id,
+        )
+
     @app.exception_handler(Exception)
     async def global_exception_handler(request: Request, exc: Exception):
         request_id = getattr(request.state, "request_id", "unknown")
-        
-        logger.error(
-            "Unhandled exception",
-            request_id=request_id,
-            exception=str(exc),
-            exc_info=True,
-        )
-        
-        return JSONResponse(
+        logger.exception("Unhandled exception", request_id=request_id)
+        return error(
+            code=INTERNAL_ERROR,
+            message="An unexpected error occurred",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "error": {
-                    "code": "INTERNAL_ERROR",
-                    "message": "An unexpected error occurred",
-                    "request_id": request_id,
-                }
-            },
+            request_id=request_id,
         )
-    
+
     # Mount versioned API router
     app.include_router(v1_router, prefix=settings.api_v1_prefix)
     

@@ -14,6 +14,7 @@ from app.db.base import Base
 from app.models import (
     Agent,
     APIKey,
+    AuditLog,
     Embedding,
     Episode,
     MemoryFact,
