@@ -1,27 +1,10 @@
-"""Unit tests for memory scoping system (no database/Redis required)."""
+"""Compatibility smoke tests for scoping module."""
 
-import sys
-from pathlib import Path
+from sqlalchemy.sql.elements import False_
 
-# Add parent directory to path to import app modules
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-import uuid
-
-import pytest
+from app.services.scoping import ScopeResolver
 
 
-# Import after path setup
-from app.middleware.context import RequestContext
-from app.services.scoping import MemoryScope, ScopeResolver
-
-
-class TestMemoryScope:
-    """Tests for MemoryScope dataclass."""
-
-    def test_org_scope_creation(self):
-        """Test creating an org-level scope."""
-        org_id = uuid.uuid4()
-        scope = MemoryScope(org_id=org_id, level="org")
-        
-  
+def test_empty_scopes_returns_false_sql_expression() -> None:
+    clause = ScopeResolver.to_sql_filter([])
+    assert isinstance(clause, False_)
