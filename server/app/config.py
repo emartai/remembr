@@ -71,6 +71,12 @@ class Settings(BaseSettings):
         description="Batch size for embedding generation",
     )
 
+    # Short-term memory
+    short_term_max_tokens: int = Field(
+        default=4000,
+        description="Max token budget for short-term sliding window",
+    )
+
     # Logging
     log_level: str = Field(
         default="INFO",
