@@ -76,6 +76,10 @@ class Settings(BaseSettings):
         default=4000,
         description="Max token budget for short-term sliding window",
     )
+    short_term_auto_checkpoint_threshold: float = Field(
+        default=0.8,
+        description="Threshold ratio to trigger automatic short-term checkpointing",
+    )
 
     # Logging
     log_level: str = Field(
@@ -88,6 +92,14 @@ class Settings(BaseSettings):
         default="/api/v1",
         description="API v1 route prefix",
     )
+
+    @field_validator("short_term_auto_checkpoint_threshold")
+    @classmethod
+    def validate_short_term_auto_checkpoint_threshold(cls, v: float) -> float:
+        """Validate auto-checkpoint threshold is in the open interval (0, 1]."""
+        if v <= 0 or v > 1:
+            raise ValueError("short_term_auto_checkpoint_threshold must be in (0, 1]")
+        return v
 
     @field_validator("log_level")
     @classmethod
