@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import asyncio
 import uuid
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Any
 
 from loguru import logger
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.db.session import AsyncSessionLocal
@@ -15,6 +17,45 @@ from app.models import Embedding, Episode
 from app.repositories import episode_repo
 from app.services.embedding_service import EmbeddingService
 from app.services.scoping import MemoryScope
+
+
+@dataclass(frozen=True)
+class EpisodeSearchResult:
+    """Semantic search result with episode payload and similarity score."""
+
+    episode: Episode
+    similarity_score: float
+
+
+def _as_uuid(value: str | uuid.UUID | None) -> uuid.UUID | None:
+    """Convert str/uuid into UUID or None."""
+    if value is None:
+        return None
+    if isinstance(value, uuid.UUID):
+        return value
+    return uuid.UUID(str(value))
+
+
+def _to_pgvector_literal(vector: list[float]) -> str:
+    """Convert a Python float list into pgvector literal format."""
+    return "[" + ",".join(str(item) for item in vector) + "]"
+
+
+def _row_to_episode(row: Any) -> Episode:
+    """Build detached Episode model from row mapping."""
+    return Episode(
+        id=row.id,
+        org_id=row.org_id,
+        team_id=row.team_id,
+        user_id=row.user_id,
+        agent_id=row.agent_id,
+        session_id=row.session_id,
+        role=row.role,
+        content=row.content,
+        tags=row.tags,
+        metadata_=row.metadata,
+        created_at=row.created_at,
+    )
 
 
 class EpisodicMemory:
@@ -118,6 +159,157 @@ class EpisodicMemory:
             episode_id=episode_id,
             scope=scope,
         )
+
+    async def search_semantic(
+        self,
+        scope: MemoryScope,
+        query: str,
+        limit: int = 10,
+        score_threshold: float = 0.7,
+    ) -> list[EpisodeSearchResult]:
+        """Run semantic search against episode embeddings within scope."""
+        query_vector, _ = await self.embedding_service.generate_embedding(query)
+        vector_literal = _to_pgvector_literal(query_vector)
+
+        sql = text(
+            """
+            SELECT
+                e.id,
+                e.org_id,
+                e.team_id,
+                e.user_id,
+                e.agent_id,
+                e.session_id,
+                e.role,
+                e.content,
+                e.tags,
+                e.metadata,
+                e.created_at,
+                1 - (emb.vector <=> :query_vector::vector) AS similarity_score
+            FROM embeddings emb
+            JOIN episodes e ON e.id = emb.episode_id
+            WHERE e.org_id = :org_id
+              AND e.team_id IS NOT DISTINCT FROM :team_id
+              AND e.user_id IS NOT DISTINCT FROM :user_id
+              AND e.agent_id IS NOT DISTINCT FROM :agent_id
+              AND 1 - (emb.vector <=> :query_vector::vector) >= :score_threshold
+            ORDER BY similarity_score DESC
+            LIMIT :limit
+            """
+        )
+        result = await self.db.execute(
+            sql,
+            {
+                "org_id": _as_uuid(scope.org_id),
+                "team_id": _as_uuid(scope.team_id),
+                "user_id": _as_uuid(scope.user_id),
+                "agent_id": _as_uuid(scope.agent_id),
+                "query_vector": vector_literal,
+                "score_threshold": score_threshold,
+                "limit": limit,
+            },
+        )
+
+        return [
+            EpisodeSearchResult(
+                episode=_row_to_episode(row),
+                similarity_score=float(row.similarity_score),
+            )
+            for row in result
+        ]
+
+    async def search_hybrid(
+        self,
+        scope: MemoryScope,
+        query: str,
+        tags: list[str] | None = None,
+        from_time: datetime | None = None,
+        to_time: datetime | None = None,
+        role: str | None = None,
+        limit: int = 10,
+        score_threshold: float = 0.65,
+    ) -> list[EpisodeSearchResult]:
+        """Run one-roundtrip semantic + metadata search using a CTE."""
+        query_vector, _ = await self.embedding_service.generate_embedding(query)
+        vector_literal = _to_pgvector_literal(query_vector)
+
+        sql = text(
+            """
+            WITH semantic_candidates AS (
+                SELECT
+                    emb.episode_id,
+                    1 - (emb.vector <=> :query_vector::vector) AS similarity_score
+                FROM embeddings emb
+                WHERE emb.org_id = :org_id
+                  AND 1 - (emb.vector <=> :query_vector::vector) >= :score_threshold
+                ORDER BY similarity_score DESC
+                LIMIT 50
+            )
+            SELECT
+                e.id,
+                e.org_id,
+                e.team_id,
+                e.user_id,
+                e.agent_id,
+                e.session_id,
+                e.role,
+                e.content,
+                e.tags,
+                e.metadata,
+                e.created_at,
+                sc.similarity_score
+            FROM semantic_candidates sc
+            JOIN episodes e ON e.id = sc.episode_id
+            WHERE e.org_id = :org_id
+              AND e.team_id IS NOT DISTINCT FROM :team_id
+              AND e.user_id IS NOT DISTINCT FROM :user_id
+              AND e.agent_id IS NOT DISTINCT FROM :agent_id
+              AND (:tags IS NULL OR e.tags && :tags)
+              AND (:from_time IS NULL OR e.created_at >= :from_time)
+              AND (:to_time IS NULL OR e.created_at <= :to_time)
+              AND (:role IS NULL OR e.role = :role)
+            ORDER BY sc.similarity_score DESC
+            LIMIT :limit
+            """
+        )
+        result = await self.db.execute(
+            sql,
+            {
+                "org_id": _as_uuid(scope.org_id),
+                "team_id": _as_uuid(scope.team_id),
+                "user_id": _as_uuid(scope.user_id),
+                "agent_id": _as_uuid(scope.agent_id),
+                "query_vector": vector_literal,
+                "score_threshold": score_threshold,
+                "tags": tags,
+                "from_time": from_time,
+                "to_time": to_time,
+                "role": role,
+                "limit": limit,
+            },
+        )
+
+        return [
+            EpisodeSearchResult(
+                episode=_row_to_episode(row),
+                similarity_score=float(row.similarity_score),
+            )
+            for row in result
+        ]
+
+    async def reconstruct_state_at(
+        self,
+        scope: MemoryScope,
+        timestamp: datetime,
+    ) -> list[Episode]:
+        """Return all scoped episodes that existed at a given timestamp."""
+        snapshot = await episode_repo.list_episodes(
+            db=self.db,
+            scope=scope,
+            to_time=timestamp,
+            limit=10_000,
+        )
+        return sorted(snapshot, key=lambda ep: ep.created_at)
 
     async def _generate_and_store_embedding(
         self,

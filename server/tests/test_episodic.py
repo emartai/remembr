@@ -43,6 +43,26 @@ class _SessionFactory:
         return False
 
 
+class _FakeExecuteResult:
+    def __init__(self, rows):
+        self._rows = rows
+
+    def __iter__(self):
+        return iter(self._rows)
+
+
+class _FakeDB:
+    def __init__(self, rows):
+        self.rows = rows
+        self.last_sql = None
+        self.last_params = None
+
+    async def execute(self, sql, params):
+        self.last_sql = sql
+        self.last_params = params
+        return _FakeExecuteResult(self.rows)
+
+
 @pytest.fixture
 def scope() -> MemoryScope:
     return MemoryScope(org_id=str(uuid.uuid4()), level="org")
@@ -131,3 +151,102 @@ async def test_search_by_tags_delegates_to_repo(
     kwargs = mocked_list.await_args.kwargs
     assert kwargs["tags"] == ["a"]
     assert kwargs["limit"] == 3
+
+
+@pytest.mark.asyncio
+async def test_search_semantic_returns_similarity_results(scope: MemoryScope):
+    row = SimpleNamespace(
+        id=uuid.uuid4(),
+        org_id=uuid.UUID(scope.org_id),
+        team_id=None,
+        user_id=None,
+        agent_id=None,
+        session_id=None,
+        role="assistant",
+        content="Try marinating the tofu in tamari and ginger.",
+        tags=["cooking"],
+        metadata={"source": "chat"},
+        created_at=datetime(2026, 1, 2, tzinfo=UTC),
+        similarity_score=0.93,
+    )
+    fake_db = _FakeDB(rows=[row])
+    embedding_service = SimpleNamespace(
+        generate_embedding=AsyncMock(return_value=([0.2, 0.4, 0.8], 3))
+    )
+
+    svc = EpisodicMemory(db=fake_db, embedding_service=embedding_service)
+    results = await svc.search_semantic(
+        scope=scope,
+        query="best way to season tofu",
+        limit=5,
+        score_threshold=0.7,
+    )
+
+    assert len(results) == 1
+    assert results[0].episode.content.startswith("Try marinating")
+    assert results[0].similarity_score == pytest.approx(0.93)
+    assert fake_db.last_params["score_threshold"] == 0.7
+    assert "<=>" in str(fake_db.last_sql)
+
+
+@pytest.mark.asyncio
+async def test_search_hybrid_combines_semantic_with_filters(scope: MemoryScope):
+    row = SimpleNamespace(
+        id=uuid.uuid4(),
+        org_id=uuid.UUID(scope.org_id),
+        team_id=None,
+        user_id=None,
+        agent_id=None,
+        session_id=None,
+        role="assistant",
+        content="Password reset requires identity verification first.",
+        tags=["support", "security"],
+        metadata={"ticket": "abc"},
+        created_at=datetime(2026, 1, 3, tzinfo=UTC),
+        similarity_score=0.88,
+    )
+    fake_db = _FakeDB(rows=[row])
+    embedding_service = SimpleNamespace(
+        generate_embedding=AsyncMock(return_value=([0.1, 0.3, 0.9], 3))
+    )
+
+    svc = EpisodicMemory(db=fake_db, embedding_service=embedding_service)
+    from_time = datetime(2026, 1, 1, tzinfo=UTC)
+    to_time = datetime(2026, 1, 4, tzinfo=UTC)
+
+    results = await svc.search_hybrid(
+        scope=scope,
+        query="helped customer recover account",
+        tags=["support"],
+        from_time=from_time,
+        to_time=to_time,
+        role="assistant",
+        limit=3,
+        score_threshold=0.65,
+    )
+
+    assert len(results) == 1
+    assert results[0].episode.tags == ["support", "security"]
+    assert results[0].similarity_score == pytest.approx(0.88)
+    assert fake_db.last_params["tags"] == ["support"]
+    assert fake_db.last_params["role"] == "assistant"
+    assert "WITH semantic_candidates" in str(fake_db.last_sql)
+
+
+@pytest.mark.asyncio
+async def test_reconstruct_state_at_returns_snapshot(scope: MemoryScope, monkeypatch: pytest.MonkeyPatch):
+    older = SimpleNamespace(created_at=datetime(2026, 1, 1, 9, tzinfo=UTC), id=uuid.uuid4())
+    newer = SimpleNamespace(created_at=datetime(2026, 1, 1, 15, tzinfo=UTC), id=uuid.uuid4())
+
+    mocked_list = AsyncMock(return_value=[newer, older])
+    monkeypatch.setattr("app.services.episodic.episode_repo.list_episodes", mocked_list)
+
+    svc = EpisodicMemory(db=object())
+    snapshot = await svc.reconstruct_state_at(
+        scope=scope,
+        timestamp=datetime(2026, 1, 1, 16, tzinfo=UTC),
+    )
+
+    assert [item.id for item in snapshot] == [older.id, newer.id]
+    kwargs = mocked_list.await_args.kwargs
+    assert kwargs["to_time"] == datetime(2026, 1, 1, 16, tzinfo=UTC)
