@@ -1,0 +1,107 @@
+"""Episode model."""
+
+import uuid
+from datetime import datetime
+
+from sqlalchemy import ARRAY, DateTime, ForeignKey, String, Text, func
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.base import Base, UUIDMixin
+
+
+class Episode(Base, UUIDMixin):
+    """
+    Episode model representing individual messages or interactions.
+    
+    Episodes are the atomic units of memory in the system.
+    """
+
+    __tablename__ = "episodes"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    team_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("teams.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    agent_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("agents.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    session_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("sessions.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    role: Mapped[str] = mapped_column(String(50), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    tags: Mapped[list[str] | None] = mapped_column(
+        ARRAY(String),
+        nullable=True,
+    )
+    metadata_: Mapped[dict | None] = mapped_column(
+        "metadata",
+        JSONB,
+        nullable=True,
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        index=True,
+    )
+
+    # Relationships
+    organization: Mapped["Organization"] = relationship(
+        "Organization",
+        back_populates="episodes",
+    )
+    team: Mapped["Team | None"] = relationship(
+        "Team",
+        back_populates="episodes",
+    )
+    user: Mapped["User | None"] = relationship(
+        "User",
+        back_populates="episodes",
+    )
+    agent: Mapped["Agent | None"] = relationship(
+        "Agent",
+        back_populates="episodes",
+    )
+    session: Mapped["Session | None"] = relationship(
+        "Session",
+        back_populates="episodes",
+    )
+    memory_facts: Mapped[list["MemoryFact"]] = relationship(
+        "MemoryFact",
+        back_populates="source_episode",
+    )
+    embeddings: Mapped[list["Embedding"]] = relationship(
+        "Embedding",
+        back_populates="episode",
+        cascade="all, delete-orphan",
+    )
+    embedding: Mapped["Embedding | None"] = relationship(
+        "Embedding",
+        back_populates="episode",
+        uselist=False,
+    )
+
+    def __repr__(self) -> str:
+        return f"<Episode(id={self.id}, role={self.role}, org_id={self.org_id})>"
