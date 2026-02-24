@@ -1,0 +1,232 @@
+import {
+  AuthenticationError,
+  NotFoundError,
+  RateLimitError,
+  RemembrClient,
+  ServerError,
+  Session,
+} from '../src';
+import { installMockFetch, installSequentialMockFetch, jsonResponse } from './helpers/mock-fetch';
+
+const ORIGINAL_FETCH = global.fetch;
+
+describe('RemembrClient', () => {
+  afterEach(() => {
+    jest.useRealTimers();
+    jest.restoreAllMocks();
+    global.fetch = ORIGINAL_FETCH;
+  });
+
+  test('constructor throws without api key', () => {
+    const originalProcess = (globalThis as any).process;
+    (globalThis as any).process = { env: {} };
+    expect(() => new RemembrClient()).toThrow(AuthenticationError);
+    (globalThis as any).process = originalProcess;
+  });
+
+  test('createSession returns a Session-like payload', async () => {
+    const mock = installMockFetch(() =>
+      jsonResponse({
+        data: {
+          request_id: 'req_1',
+          session_id: 'sess_1',
+          org_id: 'org_1',
+          created_at: '2025-01-01T00:00:00.000Z',
+          metadata: { team: 'sdk' },
+        },
+      })
+    );
+
+    const client = new RemembrClient({ apiKey: 'test-key' });
+    const session: Session = await client.createSession({ team: 'sdk' });
+
+    expect(session.session_id).toBe('sess_1');
+    expect(session.request_id).toBe('req_1');
+    expect(mock.calls[0].init?.method).toBe('POST');
+  });
+
+  test('getSession maps nested response and throws on invalid payload', async () => {
+    const okMock = installMockFetch(() =>
+      jsonResponse({
+        data: {
+          request_id: 'req_1',
+          session: {
+            session_id: 'sess_1',
+            org_id: 'org_1',
+            created_at: '2025-01-01T00:00:00.000Z',
+            metadata: { foo: 'bar' },
+          },
+        },
+      })
+    );
+
+    const client = new RemembrClient({ apiKey: 'test-key' });
+    const session = await client.getSession('sess_1');
+    expect(session.org_id).toBe('org_1');
+    expect(session.metadata).toEqual({ foo: 'bar' });
+
+    okMock.restore();
+
+    installMockFetch(() => jsonResponse({ data: { request_id: 'x', session: null } }));
+    await expect(client.getSession('sess_1')).rejects.toBeInstanceOf(ServerError);
+  });
+
+  test('listSessions handles defaults, pagination and validates params', async () => {
+    const mock = installMockFetch(() =>
+      jsonResponse({
+        data: {
+          request_id: 'r1',
+          org_id: 'o1',
+          sessions: [{ session_id: 's1', created_at: '2025-01-01T00:00:00.000Z', metadata: null }],
+        },
+      })
+    );
+
+    const client = new RemembrClient({ apiKey: 'test-key' });
+    const rows = await client.listSessions();
+    expect(rows).toHaveLength(1);
+    expect(String(mock.calls[0].input)).toContain('limit=20');
+    expect(String(mock.calls[0].input)).toContain('offset=0');
+
+    await expect(client.listSessions({ limit: 0 })).rejects.toThrow('limit must be greater than 0');
+    await expect(client.listSessions({ offset: -1 })).rejects.toThrow(
+      'offset must be greater than or equal to 0'
+    );
+  });
+
+  test('store sends correct request body and default role/tags', async () => {
+    const mock = installSequentialMockFetch([
+      jsonResponse({ data: { episode_id: 'ep_1', session_id: 'sess_1', created_at: '2025-01-01T00:00:00.000Z' } }),
+      jsonResponse({ data: { episode_id: 'ep_2', session_id: null, created_at: '2025-01-01T00:00:00.000Z' } }),
+    ]);
+
+    const client = new RemembrClient({ apiKey: 'test-key' });
+    await client.store({
+      content: 'hello',
+      role: 'assistant',
+      sessionId: 'sess_1',
+      tags: ['a', 'b'],
+      metadata: { source: 'test' },
+    });
+
+    const rawBody = mock.calls[0].init?.body as string;
+    const body = JSON.parse(rawBody);
+    expect(body).toEqual({
+      content: 'hello',
+      role: 'assistant',
+      session_id: 'sess_1',
+      tags: ['a', 'b'],
+      metadata: { source: 'test' },
+    });
+
+    const result2 = await client.store({ content: 'hello2' });
+    expect(result2.role).toBe('user');
+    expect(result2.tags).toEqual([]);
+  });
+
+  test('search handles minimal/full combinations and validation branches', async () => {
+    const fromTime = new Date('2025-01-01T00:00:00.000Z');
+    const toTime = new Date('2025-01-02T00:00:00.000Z');
+
+    const mock = installSequentialMockFetch([
+      jsonResponse({ data: { request_id: 'r1', total: 0, query_time_ms: 5, results: [] } }),
+      jsonResponse({ data: { request_id: 'r2', total: 1, query_time_ms: 8, results: [] } }),
+    ]);
+
+    const client = new RemembrClient({ apiKey: 'test-key' });
+
+    await client.search({ query: 'minimal' });
+    await client.search({
+      query: 'full',
+      sessionId: 'sess_2',
+      tags: ['x'],
+      fromTime,
+      toTime,
+      limit: 10,
+      mode: 'semantic',
+    });
+
+    const body1 = JSON.parse((mock.calls[0].init?.body as string) ?? '{}');
+    expect(body1).toMatchObject({ query: 'minimal', limit: 20, mode: 'hybrid' });
+
+    const body2 = JSON.parse((mock.calls[1].init?.body as string) ?? '{}');
+    expect(body2).toEqual({
+      query: 'full',
+      session_id: 'sess_2',
+      tags: ['x'],
+      from_time: fromTime.toISOString(),
+      to_time: toTime.toISOString(),
+      limit: 10,
+      mode: 'semantic',
+    });
+
+    await expect(client.search({ query: 'x', mode: 'bad' as any })).rejects.toThrow(
+      'mode must be one of: semantic, hybrid, filter_only'
+    );
+    await expect(client.search({ query: 'x', limit: 0 })).rejects.toThrow('limit must be greater than 0');
+    await expect(client.search({ query: 'x', fromTime: toTime, toTime: fromTime })).rejects.toThrow(
+      'fromTime must be less than or equal to toTime'
+    );
+  });
+
+  test('session history/checkpoint/restore/checkpoint listing + forget methods', async () => {
+    installSequentialMockFetch([
+      jsonResponse({ data: { episodes: [{ episode_id: 'e1', role: 'user', content: 'c', created_at: 't', tags: [] }] } }),
+      jsonResponse({ data: { checkpoint_id: 'cp_1', created_at: 't', message_count: 4 } }),
+      jsonResponse({ data: { restoredMessageCount: 4 } }),
+      jsonResponse({ data: { checkpoints: [{ checkpoint_id: 'cp_1', created_at: 't', message_count: 4 }] } }),
+      jsonResponse({ data: { deleted: true } }),
+      jsonResponse({ data: { deletedCount: 2 } }),
+      jsonResponse({ data: { deletedEpisodes: 2, deletedSessions: 1 } }),
+    ]);
+
+    const client = new RemembrClient({ apiKey: 'test-key' });
+
+    const history = await client.getSessionHistory('sess_1');
+    expect(history).toHaveLength(1);
+    await expect(client.getSessionHistory('sess_1', { limit: 0 })).rejects.toThrow(
+      'limit must be greater than 0'
+    );
+
+    const checkpoint = await client.checkpoint('sess_1');
+    const restored = await client.restore('sess_1', checkpoint.checkpoint_id);
+    const checkpoints = await client.listCheckpoints('sess_1');
+    const deletedEpisode = await client.forgetEpisode('ep_1');
+    const deletedSession = await client.forgetSession('sess_1');
+    const deletedUser = await client.forgetUser('user_1');
+
+    expect(restored.restoredMessageCount).toBe(4);
+    expect(checkpoints).toHaveLength(1);
+    expect(deletedEpisode.deleted).toBe(true);
+    expect(deletedSession.deletedCount).toBe(2);
+    expect(deletedUser.deletedSessions).toBe(1);
+  });
+
+  test('throws AuthenticationError on 401', async () => {
+    installMockFetch(() => jsonResponse({ error: { message: 'invalid key', code: 'AUTH' } }, 401));
+
+    const client = new RemembrClient({ apiKey: 'test-key' });
+    await expect(client.createSession()).rejects.toBeInstanceOf(AuthenticationError);
+  });
+
+  test('throws RateLimitError on 429 with retry behavior', async () => {
+    jest.useFakeTimers();
+
+    const mock = installMockFetch(() => jsonResponse({ error: { message: 'rate limited' } }, 429));
+
+    const client = new RemembrClient({ apiKey: 'test-key' });
+    const promise = client.createSession();
+    const assertion = expect(promise).rejects.toBeInstanceOf(RateLimitError);
+
+    await jest.advanceTimersByTimeAsync(7100);
+    await assertion;
+    expect(mock.fetchMock).toHaveBeenCalledTimes(4);
+  });
+
+  test('throws NotFoundError on 404', async () => {
+    installMockFetch(() => jsonResponse({ error: { message: 'not found' } }, 404));
+
+    const client = new RemembrClient({ apiKey: 'test-key' });
+    await expect(client.getSession('missing')).rejects.toBeInstanceOf(NotFoundError);
+  });
+});

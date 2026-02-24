@@ -4,23 +4,31 @@
   "description": "TypeScript SDK for Remembr memory service",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
-    "test": "jest",
-    "lint": "eslint src --ext .ts"
+    "test": "tsc --noEmit && jest --coverage",
+    "lint": "tslint"
   },
-  "keywords": ["remembr", "memory", "ai", "agents"],
+  "keywords": [
+    "remembr",
+    "memory",
+    "ai",
+    "agents"
+  ],
   "author": "",
   "license": "MIT",
+  "dependencies": {},
   "devDependencies": {
-    "@types/node": "^20.11.0",
     "typescript": "^5.3.0",
     "jest": "^29.7.0",
     "@types/jest": "^29.5.0",
-    "ts-jest": "^29.1.0",
-    "eslint": "^8.56.0",
-    "@typescript-eslint/eslint-plugin": "^6.19.0",
-    "@typescript-eslint/parser": "^6.19.0"
-  },
-  "dependencies": {}
+    "ts-jest": "^29.1.0"
+  }
 }
