@@ -1,0 +1,13 @@
+[project]
+name = "remembr-autogen-adapter"
+version = "0.1.0"
+description = "AutoGen adapter for Remembr memory injection"
+requires-python = ">=3.10"
+dependencies = [
+  "remembr>=0.1.0",
+  "pyautogen>=0.2.0",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"

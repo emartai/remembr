@@ -1,0 +1,13 @@
+[project]
+name = "remembr-pydantic-ai-adapter"
+version = "0.1.0"
+description = "Pydantic AI adapter for Remembr dependency-injected memory"
+requires-python = ">=3.10"
+dependencies = [
+  "remembr>=0.1.0",
+  "pydantic-ai>=0.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"

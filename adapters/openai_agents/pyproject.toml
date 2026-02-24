@@ -1,0 +1,13 @@
+[project]
+name = "remembr-openai-agents-adapter"
+version = "0.1.0"
+description = "OpenAI Agents SDK adapter for Remembr memory"
+requires-python = ">=3.10"
+dependencies = [
+  "remembr>=0.1.0",
+  "openai-agents>=0.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
