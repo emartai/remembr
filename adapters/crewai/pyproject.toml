@@ -1,0 +1,13 @@
+[project]
+name = "remembr-crewai-adapter"
+version = "0.1.0"
+description = "CrewAI adapter for Remembr shared crew memory"
+requires-python = ">=3.10"
+dependencies = [
+  "remembr>=0.1.0",
+  "crewai>=0.51.0",
+]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
