@@ -24,6 +24,7 @@ from app.exceptions import (
     RemembrException,
     ValidationError,
 )
+from app.middleware.rate_limit import setup_rate_limiting
 
 
 def configure_logging() -> None:
@@ -103,7 +104,7 @@ def create_app() -> FastAPI:
     # CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"] if settings.is_local else [],
+        allow_origins=settings.cors_origins if settings.cors_origins else (["*"] if settings.is_local else []),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
@@ -245,6 +246,9 @@ def create_app() -> FastAPI:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             request_id=request_id,
         )
+
+    # Enable API rate limiting
+    setup_rate_limiting(app)
 
     # Mount versioned API router
     app.include_router(v1_router, prefix=settings.api_v1_prefix)

@@ -225,11 +225,40 @@ def debug_function():  # pragma: no cover
     pass
 ```
 
+
+## End-to-End (E2E) Tests
+
+E2E tests live in `tests/e2e/` and run against real Remembr infrastructure.
+
+### E2E Environment Variables
+
+```bash
+export REMEMBR_E2E_API_KEY=<org api key>
+export REMEMBR_E2E_BASE_URL=https://api.remembr.dev/v1
+
+# Optional for multi-tenant isolation test
+export REMEMBR_E2E_API_KEY_ORG_A=<org A key>
+export REMEMBR_E2E_API_KEY_ORG_B=<org B key>
+
+# Optional cleanup target for forget_user
+export REMEMBR_E2E_USER_ID=<uuid>
+```
+
+### Run E2E Suite Locally
+
+```bash
+pytest tests/e2e -v
+```
+
+If `REMEMBR_E2E_API_KEY` is not set, the entire E2E suite is skipped.
+
 ## Continuous Integration
 
-GitHub Actions runs tests automatically on:
+GitHub Actions runs unit/integration tests automatically on:
 - Push to `main` branch
 - Pull requests to `main` branch
+
+E2E tests run **only** on pushes to `main` (never on pull requests).
 
 CI is skipped for:
 - Changes to `*.md` files
