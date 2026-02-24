@@ -3,6 +3,7 @@
 from collections.abc import AsyncGenerator
 
 from loguru import logger
+from sqlalchemy.exc import TimeoutError as SATimeoutError
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     async_sessionmaker,
@@ -20,8 +21,10 @@ engine = create_async_engine(
     ),
     echo=settings.log_level == "DEBUG",
     pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
+    pool_size=settings.db_pool_size,
+    max_overflow=settings.db_max_overflow,
+    pool_timeout=settings.db_pool_timeout,
+    pool_recycle=settings.db_pool_recycle,
 )
 
 # Create async session factory
@@ -37,20 +40,15 @@ AsyncSessionLocal = async_sessionmaker(
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Dependency for getting async database sessions.
-    
+
     Automatically sets the organization context from the request context
     if available, enabling Row-Level Security.
-    
-    Yields:
-        AsyncSession: Database session
     """
-    # Import here to avoid circular dependency
     from app.db.rls import set_org_context
     from app.middleware.context import get_current_context
-    
+
     async with AsyncSessionLocal() as session:
         try:
-            # Set org context from request context if available
             ctx = get_current_context()
             if ctx and ctx.org_id:
                 await set_org_context(session, ctx.org_id)
@@ -58,9 +56,19 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
                     "Database session initialized with org context",
                     org_id=str(ctx.org_id),
                 )
-            
+
             yield session
             await session.commit()
+        except SATimeoutError as exc:
+            logger.warning(
+                "Database connection pool timeout (possible pool exhaustion)",
+                pool_size=settings.db_pool_size,
+                max_overflow=settings.db_max_overflow,
+                pool_timeout=settings.db_pool_timeout,
+                error=str(exc),
+            )
+            await session.rollback()
+            raise
         except Exception:
             await session.rollback()
             raise

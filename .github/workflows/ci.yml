@@ -15,7 +15,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     services:
       postgres:
         image: postgres:15
@@ -30,7 +30,7 @@ jobs:
           --health-retries 5
         ports:
           - 5432:5432
-      
+
       redis:
         image: redis:7
         options: >-
@@ -40,32 +40,32 @@ jobs:
           --health-retries 5
         ports:
           - 6379:6379
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-      
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r server/requirements.txt
           pip install pytest pytest-cov pytest-asyncio httpx
-      
+
       - name: Run ruff linting
         run: |
           pip install ruff
           ruff check server/app --output-format=github
-      
+
       - name: Run ruff formatting check
         run: |
           ruff format server/app --check
-      
+
       - name: Run tests with coverage
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/remembr_test
@@ -77,7 +77,7 @@ jobs:
         run: |
           cd server
           pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=70
-      
+
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
         if: always()
@@ -86,3 +86,32 @@ jobs:
           flags: unittests
           name: codecov-umbrella
         continue-on-error: true
+
+  e2e-tests:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install E2E dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-asyncio httpx tenacity pydantic
+
+      - name: Run E2E suite
+        env:
+          REMEMBR_E2E_API_KEY: ${{ secrets.REMEMBR_E2E_API_KEY }}
+          REMEMBR_E2E_API_KEY_ORG_A: ${{ secrets.REMEMBR_E2E_API_KEY_ORG_A }}
+          REMEMBR_E2E_API_KEY_ORG_B: ${{ secrets.REMEMBR_E2E_API_KEY_ORG_B }}
+          REMEMBR_E2E_BASE_URL: ${{ secrets.REMEMBR_E2E_BASE_URL }}
+          REMEMBR_E2E_USER_ID: ${{ secrets.REMEMBR_E2E_USER_ID }}
+        run: |
+          pytest tests/e2e -v

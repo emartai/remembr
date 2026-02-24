@@ -1,148 +1,53 @@
 # Remembr
 
-[![CI](https://github.com/yourusername/remembr/actions/workflows/ci.yml/badge.svg)](https://github.com/yourusername/remembr/actions/workflows/ci.yml)
-[![Coverage](https://codecov.io/gh/yourusername/remembr/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/remembr)
-
 Persistent memory infrastructure for AI agents.
 
-## Overview
+## Documentation Hub
 
-Remembr provides a unified memory layer for AI agents across multiple frameworks. It consists of:
+Start here:
 
-- **Server**: FastAPI-based memory service with PostgreSQL backend
-- **SDKs**: Python and TypeScript clients for interacting with the memory service
-- **Adapters**: Framework-specific integrations for LangChain, LangGraph, CrewAI, AutoGen, LlamaIndex, Pydantic AI, OpenAI Agents, and Haystack
+- [Quickstart](docs/quickstart.md)
+- [API Reference](docs/api-reference.md)
+- [Concepts](docs/concepts.md)
+- [Self-hosted Setup](docs/self-hosted.md)
+- [Adapter Guides](docs/adapters/)
 
-## Architecture
+## Adapter Comparison
 
-```
+| Framework | Pattern used | Best for | Install command |
+|---|---|---|---|
+| LangChain | `BaseChatMemory` drop-in | Existing LangChain chains/agents | `pip install remembr-langchain-adapter` |
+| LangGraph | Graph state nodes + checkpointer | Stateful graph workflows with thread checkpoints | `pip install remembr-langgraph-adapter` |
+| CrewAI | Shared + layered crew memory | Multi-agent crew collaboration | `pip install remembr-crewai-adapter` |
+| AutoGen | Agent hook injection | ConversableAgent/group chat memory context | `pip install remembr-autogen-adapter` |
+| LlamaIndex | Chat store + semantic memory buffer | Query/chat engines and RAG memory | `pip install remembr-llamaindex-adapter` |
+| Pydantic AI | Typed dependency injection + tools | Structured tool-first agents | `pip install remembr-pydantic-ai-adapter` |
+| OpenAI Agents SDK | `@function_tool` + lifecycle hooks | Swarm/handoff workflows | `pip install remembr-openai-agents-adapter` |
+| Haystack | `@component` pipeline blocks | Pipeline-based RAG and orchestration | `pip install remembr-haystack-adapter` |
+
+## Repository Layout
+
+```text
 remembr/
-├── server/          # FastAPI memory service
+├── docs/
+│   ├── quickstart.md
+│   ├── api-reference.md
+│   ├── concepts.md
+│   ├── self-hosted.md
+│   └── adapters/
+├── server/
 ├── sdk/
-│   ├── python/      # Python SDK
-│   └── typescript/  # TypeScript SDK
-└── adapters/        # Framework-specific adapters
-    ├── langchain/
-    ├── langgraph/
-    ├── crewai/
-    ├── autogen/
-    ├── llamaindex/
-    ├── pydantic_ai/
-    ├── openai_agents/
-    └── haystack/
-```
-
-## Setup
-
-### Prerequisites
-
-- Python 3.11+
-- Node.js 18+
-- PostgreSQL 14+ (with pgvector extension)
-- Redis (or Upstash account)
-
-### Quick Start
-
-1. Copy environment configuration:
-```bash
-cp .env.example .env
-```
-
-2. Edit `.env` and set required variables:
-   - `DATABASE_URL`: PostgreSQL connection string
-   - `REDIS_URL`: Redis connection string
-   - `SECRET_KEY`: Generate with `openssl rand -hex 32`
-   - `JINA_API_KEY`: Get from https://jina.ai/
-
-3. Install dependencies:
-```bash
-make setup
-```
-
-Or manually:
-
-```bash
-# Install pre-commit hooks
-pip install pre-commit
-pre-commit install
-
-# Server setup
-cd server
-pip install -e ".[dev]"
-
-# Python SDK setup
-cd ../sdk/python
-pip install -e ".[dev]"
-
-# TypeScript SDK setup
-cd ../typescript
-npm install
+└── adapters/
 ```
 
 ## Development
 
-### Running the Server
-
 ```bash
+# Server
 cd server
 uvicorn app.main:app --reload
+
+# Tests
+pytest tests/ -v
+pytest ../tests/e2e -v
 ```
-
-### Running Tests
-
-```bash
-# Python tests
-cd server
-pytest tests/ -v --cov=app
-
-# TypeScript tests
-cd sdk/typescript
-npm test
-
-# E2E tests
-cd tests/e2e
-pytest
-```
-
-### Linting
-
-```bash
-# Run pre-commit on all files
-pre-commit run --all-files
-
-# Or manually
-ruff check server/app --fix
-ruff format server/app
-```
-
-## Deployment
-
-### Quick Deploy to Railway
-
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new)
-
-See [RAILWAY_QUICKSTART.md](./RAILWAY_QUICKSTART.md) for a 5-minute setup guide.
-
-### Full Deployment Guide
-
-See [DEPLOYMENT.md](./DEPLOYMENT.md) for comprehensive deployment instructions including:
-- Railway configuration
-- Supabase (PostgreSQL + pgvector) setup
-- Upstash (Redis) setup
-- Environment variables
-- Staging vs Production setup
-- Database migrations
-- Monitoring and scaling
-
-## CI/CD
-
-GitHub Actions automatically runs on every push and pull request:
-- Linting with ruff
-- Tests with pytest
-- Coverage reporting (minimum 70%)
-
-See [.github/workflows/README.md](./.github/workflows/README.md) for details.
-
-## License
-
-MIT

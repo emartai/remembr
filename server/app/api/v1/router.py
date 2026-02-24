@@ -6,6 +6,7 @@ from app.api.v1 import api_keys, auth, memory
 from app.api.responses import StandardResponse, success
 from app.config import get_settings
 from app.middleware.context import RequestContext, require_auth
+from app.middleware.rate_limit import limiter
 
 router = APIRouter()
 
@@ -16,6 +17,7 @@ router.include_router(memory.router)
 
 
 @router.get("/health", response_model=StandardResponse[dict])
+@limiter.exempt
 async def health_check(request: Request):
     """
     Health check endpoint.

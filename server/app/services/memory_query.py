@@ -7,9 +7,7 @@ import re
 import time
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Literal
-
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from app.services.episodic import EpisodeSearchResult, EpisodicMemory
 from app.services.scoping import MemoryScope
@@ -141,11 +139,17 @@ class MemoryQueryEngine:
                     limit=max(request.limit * 2, request.limit),
                 )
 
-            results = [EpisodeSearchResult(episode=episode, similarity_score=0.0) for episode in episodes]
+            results = [
+                EpisodeSearchResult(episode=episode, similarity_score=0.0) for episode in episodes
+            ]
 
         filtered = [item for item in results if self._episode_matches(item, request)]
         if request.search_mode == "filter_only":
-            return sorted(filtered, key=lambda item: item.episode.created_at, reverse=True)[: request.limit]
+            return sorted(
+                filtered,
+                key=lambda item: item.episode.created_at,
+                reverse=True,
+            )[: request.limit]
 
         return sorted(
             filtered,

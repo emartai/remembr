@@ -7,7 +7,7 @@ from time import perf_counter
 from typing import Annotated, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from pydantic import BaseModel, Field
 from redis.asyncio import Redis
 from sqlalchemy import func, select
@@ -31,6 +31,7 @@ from app.exceptions import AuthorizationError, NotFoundError, ValidationError
 from app.services.forgetting import ForgettingService
 from app.services.scoping import MemoryScope, ScopeResolver
 from app.services.short_term import SessionMessage, ShortTermMemory
+from app.middleware.rate_limit import limiter, get_search_limit
 
 router = APIRouter(tags=["memory"])
 
@@ -458,10 +459,12 @@ async def restore_session_checkpoint(
 
 
 @router.post("/memory/search", response_model=StandardResponse[MemorySearchResponse])
+@limiter.limit(get_search_limit)
 async def search_memory(
     payload: MemoryQueryRequest,
     ctx: Annotated[RequestContext, Depends(require_auth)],
     db: Annotated[AsyncSession, Depends(get_db)],
+    request: Request | None = None,
 ) -> StandardResponse[MemorySearchResponse]:
     scope = ScopeResolver.resolve_writable_scope(ScopeResolver.from_request_context(ctx))
     engine = MemoryQueryEngine(EpisodicMemory(db=db))

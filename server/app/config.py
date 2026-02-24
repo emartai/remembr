@@ -87,6 +87,28 @@ class Settings(BaseSettings):
         description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
     )
 
+
+    cors_origins: list[str] = Field(
+        default_factory=list,
+        description="Allowed CORS origins",
+    )
+
+    # Rate limiting
+    rate_limit_default_per_minute: int = Field(
+        default=100,
+        description="Default request rate limit per minute per API key/token",
+    )
+    rate_limit_search_per_minute: int = Field(
+        default=30,
+        description="Memory search endpoint rate limit per minute per API key/token",
+    )
+
+    # DB pool tuning
+    db_pool_size: int = Field(default=10, description="Async DB connection pool size")
+    db_max_overflow: int = Field(default=20, description="Async DB pool overflow")
+    db_pool_timeout: int = Field(default=30, description="Async DB pool timeout in seconds")
+    db_pool_recycle: int = Field(default=1800, description="Async DB pool recycle time in seconds")
+
     # API Configuration
     api_v1_prefix: str = Field(
         default="/api/v1",
@@ -110,6 +132,13 @@ class Settings(BaseSettings):
         if v_upper not in valid_levels:
             raise ValueError(f"log_level must be one of {valid_levels}")
         return v_upper
+
+    @field_validator("rate_limit_default_per_minute", "rate_limit_search_per_minute")
+    @classmethod
+    def validate_rate_limits(cls, v: int) -> int:
+        if v < 1:
+            raise ValueError("rate limits must be >= 1")
+        return v
 
     @property
     def is_production(self) -> bool:
