@@ -12,7 +12,7 @@ from app.config import get_settings
 class EmbeddingService:
     """
     Service for generating embeddings using Jina AI API.
-    
+
     Supports both single and batch embedding generation with automatic
     retry logic for rate limits and transient errors.
     """
@@ -33,12 +33,12 @@ class EmbeddingService:
     ) -> list[float]:
         """
         Generate embedding for a single text.
-        
+
         Args:
             text: Text to embed
             task: Task type - "retrieval.passage" for storing,
                   "retrieval.query" for searching
-                  
+
         Returns:
             1024-dimensional embedding vector
         """
@@ -52,12 +52,12 @@ class EmbeddingService:
     ) -> list[list[float]]:
         """
         Generate embeddings for multiple texts in batch.
-        
+
         Args:
             texts: List of texts to embed (max 2048 per call)
             task: Task type - "retrieval.passage" for storing,
                   "retrieval.query" for searching
-                  
+
         Returns:
             List of 1024-dimensional embedding vectors
         """
@@ -126,13 +126,8 @@ class EmbeddingService:
 
                     else:
                         # Client error - don't retry
-                        logger.error(
-                            f"Jina API error {response.status_code}: "
-                            f"{response.text}"
-                        )
-                        raise ValueError(
-                            f"Jina API error {response.status_code}: {response.text}"
-                        )
+                        logger.error(f"Jina API error {response.status_code}: {response.text}")
+                        raise ValueError(f"Jina API error {response.status_code}: {response.text}")
 
             except httpx.TimeoutException:
                 wait_time = 2**attempt
@@ -151,19 +146,17 @@ class EmbeddingService:
                     continue
                 raise
 
-        raise RuntimeError(
-            f"Failed to generate embeddings after {self.max_retries} attempts"
-        )
+        raise RuntimeError(f"Failed to generate embeddings after {self.max_retries} attempts")
 
     @staticmethod
     def cosine_similarity(a: list[float], b: list[float]) -> float:
         """
         Calculate cosine similarity between two vectors.
-        
+
         Args:
             a: First vector
             b: Second vector
-            
+
         Returns:
             Cosine similarity score between -1 and 1
         """
