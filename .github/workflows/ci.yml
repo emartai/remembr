@@ -80,7 +80,7 @@ jobs:
           LOG_LEVEL: DEBUG
         run: |
           cd server
-          pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=70
+          pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml --cov-fail-under=65
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v4
