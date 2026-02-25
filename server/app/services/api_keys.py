@@ -3,7 +3,7 @@
 import hashlib
 import secrets
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, status
@@ -155,7 +155,7 @@ async def revoke_api_key(
         return False
 
     # Revoke by setting expires_at to now
-    now = datetime.now(datetime.UTC)
+    now = datetime.now(UTC)
     await db.execute(
         update(APIKey).where(APIKey.id == key_id, APIKey.org_id == org_id).values(expires_at=now)
     )
@@ -218,7 +218,7 @@ async def lookup_api_key(
         return None
 
     # Check if expired
-    now = datetime.now(datetime.UTC)
+    now = datetime.now(UTC)
     if api_key.expires_at and api_key.expires_at <= now:
         logger.warning(
             "API key expired",

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Generic, TypeVar
 
 from fastapi.responses import JSONResponse
@@ -32,7 +32,7 @@ def success(data: T, request_id: str) -> StandardResponse[T]:
     return StandardResponse(
         data=data,
         request_id=request_id,
-        timestamp=datetime.now(datetime.UTC).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
     )
 
 

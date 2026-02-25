@@ -1,7 +1,7 @@
 """Authentication endpoints for user registration, login, and token management."""
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, status
@@ -177,8 +177,8 @@ async def logout(
 
     exp_timestamp = data.get("exp")
     if exp_timestamp:
-        exp_datetime = datetime.fromtimestamp(exp_timestamp, tz=datetime.UTC)
-        ttl_seconds = int((exp_datetime - datetime.now(datetime.UTC)).total_seconds())
+        exp_datetime = datetime.fromtimestamp(exp_timestamp, tz=UTC)
+        ttl_seconds = int((exp_datetime - datetime.now(UTC)).total_seconds())
         if ttl_seconds > 0:
             await redis.setex(f"invalidated_token:{payload.refresh_token}", ttl_seconds, "1")
 
