@@ -36,14 +36,12 @@ async def test_set_org_context(db):
     """Test setting organization context."""
     org_id = uuid.uuid4()
 
-    # Start a transaction for SET LOCAL to work
-    async with db.begin():
-        # Set context
-        await set_org_context(db, org_id)
+    # Set context
+    await set_org_context(db, org_id)
 
-        # Verify context is set
-        current_org = await get_org_context(db)
-        assert current_org == str(org_id)
+    # Verify context is set
+    current_org = await get_org_context(db)
+    assert current_org == str(org_id)
 
 
 @pytest.mark.asyncio
@@ -51,18 +49,16 @@ async def test_clear_org_context(db):
     """Test clearing organization context."""
     org_id = uuid.uuid4()
 
-    # Start a transaction for SET LOCAL to work
-    async with db.begin():
-        # Set context
-        await set_org_context(db, org_id)
-        assert await get_org_context(db) == str(org_id)
+    # Set context
+    await set_org_context(db, org_id)
+    assert await get_org_context(db) == str(org_id)
 
-        # Clear context
-        await clear_org_context(db)
+    # Clear context
+    await clear_org_context(db)
 
-        # Verify context is cleared
-        current_org = await get_org_context(db)
-        assert current_org is None or current_org == ""
+    # Verify context is cleared
+    current_org = await get_org_context(db)
+    assert current_org is None or current_org == ""
 
 
 @pytest.mark.asyncio
@@ -71,8 +67,7 @@ async def test_rls_sessions_isolation(test_orgs, db):
     org_a, org_b = test_orgs
 
     # Create session for org A
-    async with db.begin():
-        await set_org_context(db, org_a.id)
+    await set_org_context(db, org_a.id)
     session_a = Session(
         org_id=org_a.id,
         metadata={"test": "org_a"},
@@ -82,8 +77,7 @@ async def test_rls_sessions_isolation(test_orgs, db):
     await db.refresh(session_a)
 
     # Create session for org B
-    async with db.begin():
-        await set_org_context(db, org_b.id)
+    await set_org_context(db, org_b.id)
     session_b = Session(
         org_id=org_b.id,
         metadata={"test": "org_b"},
@@ -93,33 +87,29 @@ async def test_rls_sessions_isolation(test_orgs, db):
     await db.refresh(session_b)
 
     # Query as org A - should only see org A's session
-    async with db.begin():
-        await set_org_context(db, org_a.id)
-        result = await db.execute(select(Session))
-        sessions = result.scalars().all()
+    await set_org_context(db, org_a.id)
+    result = await db.execute(select(Session))
+    sessions = result.scalars().all()
 
-        # Should only see org A's session
-        assert len(sessions) == 1
-        assert sessions[0].id == session_a.id
-        assert sessions[0].org_id == org_a.id
+    # Should only see org A's session
+    assert len(sessions) == 1
+    assert sessions[0].id == session_a.id
+    assert sessions[0].org_id == org_a.id
 
     # Query as org B - should only see org B's session
-    async with db.begin():
-        await set_org_context(db, org_b.id)
-        result = await db.execute(select(Session))
-        sessions = result.scalars().all()
+    await set_org_context(db, org_b.id)
+    result = await db.execute(select(Session))
+    sessions = result.scalars().all()
 
-        # Should only see org B's session
-        assert len(sessions) == 1
-        assert sessions[0].id == session_b.id
-        assert sessions[0].org_id == org_b.id
+    # Should only see org B's session
+    assert len(sessions) == 1
+    assert sessions[0].id == session_b.id
+    assert sessions[0].org_id == org_b.id
 
     # Cleanup
-    async with db.begin():
-        await set_org_context(db, org_a.id)
+    await set_org_context(db, org_a.id)
     await db.delete(session_a)
-    async with db.begin():
-        await set_org_context(db, org_b.id)
+    await set_org_context(db, org_b.id)
     await db.delete(session_b)
     await db.commit()
 
@@ -130,8 +120,7 @@ async def test_rls_episodes_isolation(test_orgs, db):
     org_a, org_b = test_orgs
 
     # Create episode for org A
-    async with db.begin():
-        await set_org_context(db, org_a.id)
+    await set_org_context(db, org_a.id)
     episode_a = Episode(
         org_id=org_a.id,
         role="user",
@@ -142,8 +131,7 @@ async def test_rls_episodes_isolation(test_orgs, db):
     await db.refresh(episode_a)
 
     # Create episode for org B
-    async with db.begin():
-        await set_org_context(db, org_b.id)
+    await set_org_context(db, org_b.id)
     episode_b = Episode(
         org_id=org_b.id,
         role="user",
@@ -154,31 +142,27 @@ async def test_rls_episodes_isolation(test_orgs, db):
     await db.refresh(episode_b)
 
     # Query as org A
-    async with db.begin():
-        await set_org_context(db, org_a.id)
-        result = await db.execute(select(Episode))
-        episodes = result.scalars().all()
+    await set_org_context(db, org_a.id)
+    result = await db.execute(select(Episode))
+    episodes = result.scalars().all()
 
-        assert len(episodes) == 1
-        assert episodes[0].id == episode_a.id
-        assert episodes[0].content == "Message from org A"
+    assert len(episodes) == 1
+    assert episodes[0].id == episode_a.id
+    assert episodes[0].content == "Message from org A"
 
     # Query as org B
-    async with db.begin():
-        await set_org_context(db, org_b.id)
-        result = await db.execute(select(Episode))
-        episodes = result.scalars().all()
+    await set_org_context(db, org_b.id)
+    result = await db.execute(select(Episode))
+    episodes = result.scalars().all()
 
-        assert len(episodes) == 1
-        assert episodes[0].id == episode_b.id
-        assert episodes[0].content == "Message from org B"
+    assert len(episodes) == 1
+    assert episodes[0].id == episode_b.id
+    assert episodes[0].content == "Message from org B"
 
     # Cleanup
-    async with db.begin():
-        await set_org_context(db, org_a.id)
+    await set_org_context(db, org_a.id)
     await db.delete(episode_a)
-    async with db.begin():
-        await set_org_context(db, org_b.id)
+    await set_org_context(db, org_b.id)
     await db.delete(episode_b)
     await db.commit()
 
@@ -189,8 +173,7 @@ async def test_rls_direct_sql_query(test_orgs, db):
     org_a, org_b = test_orgs
 
     # Create episodes for both orgs
-    async with db.begin():
-        await set_org_context(db, org_a.id)
+    await set_org_context(db, org_a.id)
     episode_a = Episode(
         org_id=org_a.id,
         role="user",
@@ -199,8 +182,7 @@ async def test_rls_direct_sql_query(test_orgs, db):
     db.add(episode_a)
     await db.commit()
 
-    async with db.begin():
-        await set_org_context(db, org_b.id)
+    await set_org_context(db, org_b.id)
     episode_b = Episode(
         org_id=org_b.id,
         role="user",
@@ -210,25 +192,22 @@ async def test_rls_direct_sql_query(test_orgs, db):
     await db.commit()
 
     # Try direct SQL query as org A
-    async with db.begin():
-        await set_org_context(db, org_a.id)
+    await set_org_context(db, org_a.id)
 
-        # Even with SELECT *, RLS should filter
-        result = await db.execute(
-            text("SELECT * FROM episodes WHERE content LIKE '%Direct SQL test%'")
-        )
-        rows = result.fetchall()
+    # Even with SELECT *, RLS should filter
+    result = await db.execute(
+        text("SELECT * FROM episodes WHERE content LIKE '%Direct SQL test%'")
+    )
+    rows = result.fetchall()
 
-        # Should only see org A's episode
-        assert len(rows) == 1
-        assert "Direct SQL test A" in str(rows[0])
+    # Should only see org A's episode
+    assert len(rows) == 1
+    assert "Direct SQL test A" in str(rows[0])
 
     # Cleanup
-    async with db.begin():
-        await set_org_context(db, org_a.id)
+    await set_org_context(db, org_a.id)
     await db.execute(text(f"DELETE FROM episodes WHERE id = '{episode_a.id}'"))
-    async with db.begin():
-        await set_org_context(db, org_b.id)
+    await set_org_context(db, org_b.id)
     await db.execute(text(f"DELETE FROM episodes WHERE id = '{episode_b.id}'"))
     await db.commit()
 
@@ -239,22 +218,21 @@ async def test_rls_insert_wrong_org(test_orgs, db):
     org_a, org_b = test_orgs
 
     # Set context to org A
-    async with db.begin():
-        await set_org_context(db, org_a.id)
+    await set_org_context(db, org_a.id)
 
-        # Try to insert episode for org B (should fail)
-        episode = Episode(
-            org_id=org_b.id,  # Wrong org!
-            role="user",
-            content="This should fail",
-        )
-        db.add(episode)
+    # Try to insert episode for org B (should fail)
+    episode = Episode(
+        org_id=org_b.id,  # Wrong org!
+        role="user",
+        content="This should fail",
+    )
+    db.add(episode)
 
-        # Should raise an error due to RLS WITH CHECK clause
-        with pytest.raises(Exception):
-            await db.commit()
+    # Should raise an error due to RLS WITH CHECK clause
+    with pytest.raises(Exception):
+        await db.commit()
 
-        await db.rollback()
+    await db.rollback()
 
 
 @pytest.mark.asyncio
@@ -263,8 +241,7 @@ async def test_rls_memory_facts_isolation(test_orgs, db):
     org_a, org_b = test_orgs
 
     # Create memory fact for org A
-    async with db.begin():
-        await set_org_context(db, org_a.id)
+    await set_org_context(db, org_a.id)
     fact_a = MemoryFact(
         org_id=org_a.id,
         subject="User",
@@ -276,8 +253,7 @@ async def test_rls_memory_facts_isolation(test_orgs, db):
     await db.refresh(fact_a)
 
     # Create memory fact for org B
-    async with db.begin():
-        await set_org_context(db, org_b.id)
+    await set_org_context(db, org_b.id)
     fact_b = MemoryFact(
         org_id=org_b.id,
         subject="User",
@@ -289,20 +265,17 @@ async def test_rls_memory_facts_isolation(test_orgs, db):
     await db.refresh(fact_b)
 
     # Query as org A
-    async with db.begin():
-        await set_org_context(db, org_a.id)
-        result = await db.execute(select(MemoryFact))
-        facts = result.scalars().all()
+    await set_org_context(db, org_a.id)
+    result = await db.execute(select(MemoryFact))
+    facts = result.scalars().all()
 
-        assert len(facts) == 1
-        assert facts[0].object == "Python"
+    assert len(facts) == 1
+    assert facts[0].object == "Python"
 
     # Cleanup
-    async with db.begin():
-        await set_org_context(db, org_a.id)
+    await set_org_context(db, org_a.id)
     await db.delete(fact_a)
-    async with db.begin():
-        await set_org_context(db, org_b.id)
+    await set_org_context(db, org_b.id)
     await db.delete(fact_b)
     await db.commit()
 
@@ -313,8 +286,7 @@ async def test_rls_embeddings_isolation(test_orgs, db):
     org_a, org_b = test_orgs
 
     # Create embedding for org A
-    async with db.begin():
-        await set_org_context(db, org_a.id)
+    await set_org_context(db, org_a.id)
     embedding_a = Embedding(
         org_id=org_a.id,
         content="Test content A",
@@ -327,8 +299,7 @@ async def test_rls_embeddings_isolation(test_orgs, db):
     await db.refresh(embedding_a)
 
     # Create embedding for org B
-    async with db.begin():
-        await set_org_context(db, org_b.id)
+    await set_org_context(db, org_b.id)
     embedding_b = Embedding(
         org_id=org_b.id,
         content="Test content B",
@@ -341,20 +312,17 @@ async def test_rls_embeddings_isolation(test_orgs, db):
     await db.refresh(embedding_b)
 
     # Query as org A
-    async with db.begin():
-        await set_org_context(db, org_a.id)
-        result = await db.execute(select(Embedding))
-        embeddings = result.scalars().all()
+    await set_org_context(db, org_a.id)
+    result = await db.execute(select(Embedding))
+    embeddings = result.scalars().all()
 
-        assert len(embeddings) == 1
-        assert embeddings[0].content == "Test content A"
+    assert len(embeddings) == 1
+    assert embeddings[0].content == "Test content A"
 
     # Cleanup
-    async with db.begin():
-        await set_org_context(db, org_a.id)
+    await set_org_context(db, org_a.id)
     await db.delete(embedding_a)
-    async with db.begin():
-        await set_org_context(db, org_b.id)
+    await set_org_context(db, org_b.id)
     await db.delete(embedding_b)
     await db.commit()
 
