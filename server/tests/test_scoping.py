@@ -57,10 +57,13 @@ def test_to_sql_filter_generates_or_filter_for_readable_scopes() -> None:
     agent_col = Column("agent_id", postgresql.UUID(as_uuid=False))
 
     clause = ScopeResolver.to_sql_filter(readable, org_col, team_col, user_col, agent_col)
+    
+    # Compile the clause to SQL string
     compiled = str(
         clause.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True})
     )
 
+    # Verify the SQL contains expected elements
     assert " OR " in compiled
     assert "agent_id" in compiled
     assert compiled.count("org_id") >= 4

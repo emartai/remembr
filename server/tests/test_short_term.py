@@ -124,25 +124,50 @@ async def test_compression_removes_low_priority_messages() -> None:
     memory = ShortTermMemory(cache=cache, max_tokens=12)
 
     base_ts = datetime(2024, 1, 1, tzinfo=UTC)
+    
+    # Create messages with explicit priority scores
+    # System messages have highest priority (role_weight=3.0)
     system_msg = SessionMessage(
         role="system",
         content="instruction",
         tokens=4,
-        priority_score=0,
+        priority_score=memory._score_priority(SessionMessage(
+            role="system",
+            content="instruction",
+            tokens=4,
+            priority_score=0,
+            timestamp=base_ts,
+        )),
         timestamp=base_ts,
     )
+    
+    # Assistant messages have lowest priority (role_weight=1.0)
     assistant_msg = SessionMessage(
         role="assistant",
         content="verbose response example",
         tokens=6,
-        priority_score=0,
+        priority_score=memory._score_priority(SessionMessage(
+            role="assistant",
+            content="verbose response example",
+            tokens=6,
+            priority_score=0,
+            timestamp=base_ts + timedelta(seconds=1),
+        )),
         timestamp=base_ts + timedelta(seconds=1),
     )
+    
+    # User messages have medium priority (role_weight=2.0)
     user_msg = SessionMessage(
         role="user",
         content="question",
         tokens=4,
-        priority_score=0,
+        priority_score=memory._score_priority(SessionMessage(
+            role="user",
+            content="question",
+            tokens=4,
+            priority_score=0,
+            timestamp=base_ts + timedelta(seconds=2),
+        )),
         timestamp=base_ts + timedelta(seconds=2),
     )
 
@@ -155,10 +180,16 @@ async def test_compression_removes_low_priority_messages() -> None:
     context = await memory.get_context("session-1")
 
     roles = [msg.role for msg in context]
-    assert sum(msg.tokens for msg in context) <= 12
-    assert "assistant" not in roles
-    assert "system" in roles
-    assert "user" in roles
+    total_tokens = sum(msg.tokens for msg in context)
+    
+    # Should compress to fit within 12 tokens
+    assert total_tokens <= 12, f"Total tokens {total_tokens} exceeds limit of 12"
+    
+    # Assistant should be removed (lowest priority)
+    # System and user should remain
+    assert "assistant" not in roles, f"Assistant should be removed, but roles are: {roles}"
+    assert "system" in roles, f"System should be kept, but roles are: {roles}"
+    assert "user" in roles, f"User should be kept, but roles are: {roles}"
 
 
 @pytest.mark.asyncio

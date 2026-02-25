@@ -1,11 +1,12 @@
 """Pytest configuration and fixtures for tests."""
 
+import asyncio
 from collections.abc import AsyncGenerator
 
+import pytest
+import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-
-import pytest_asyncio
 
 pytest_plugins = ("pytest_asyncio",)
 
@@ -35,6 +36,15 @@ def _get_test_session_factory() -> async_sessionmaker[AsyncSession]:
         autoflush=False,
     )
     return _TestSessionLocal
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    """Create an event loop for the entire test session."""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    yield loop
+    loop.close()
 
 
 @pytest_asyncio.fixture(scope="function")
