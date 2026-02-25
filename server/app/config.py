@@ -168,8 +168,12 @@ def get_test_settings() -> Settings:
     """
     settings = get_settings()
 
-    # Override database URL for testing
-    test_db_url = settings.database_url.get_secret_value().replace("/remembr", "/remembr_test")
+    # Override database URL for testing - handle both /remembr and /remembr_test
+    db_url = settings.database_url.get_secret_value()
+    if "/remembr_test" not in db_url:
+        test_db_url = db_url.replace("/remembr", "/remembr_test")
+    else:
+        test_db_url = db_url
 
     return Settings(
         database_url=SecretStr(test_db_url),
