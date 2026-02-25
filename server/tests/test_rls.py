@@ -86,29 +86,31 @@ async def test_rls_sessions_isolation(test_orgs, db):
     await db.commit()
     await db.refresh(session_b)
 
-    # Query as org A - should only see org A's session
+    # Query as org A - need to set context again after commit
     await set_org_context(db, org_a.id)
     result = await db.execute(select(Session))
     sessions = result.scalars().all()
 
     # Should only see org A's session
-    assert len(sessions) == 1
+    assert len(sessions) == 1, f"Expected 1 session for org A, got {len(sessions)}"
     assert sessions[0].id == session_a.id
     assert sessions[0].org_id == org_a.id
 
-    # Query as org B - should only see org B's session
+    # Query as org B - need to set context again
     await set_org_context(db, org_b.id)
     result = await db.execute(select(Session))
     sessions = result.scalars().all()
 
     # Should only see org B's session
-    assert len(sessions) == 1
+    assert len(sessions) == 1, f"Expected 1 session for org B, got {len(sessions)}"
     assert sessions[0].id == session_b.id
     assert sessions[0].org_id == org_b.id
 
     # Cleanup
     await set_org_context(db, org_a.id)
     await db.delete(session_a)
+    await db.commit()
+    
     await set_org_context(db, org_b.id)
     await db.delete(session_b)
     await db.commit()
@@ -285,27 +287,27 @@ async def test_rls_embeddings_isolation(test_orgs, db):
     """Test RLS for embeddings table."""
     org_a, org_b = test_orgs
 
-    # Create embedding for org A
+    # Create embedding for org A with correct dimensions (1024)
     await set_org_context(db, org_a.id)
     embedding_a = Embedding(
         org_id=org_a.id,
         content="Test content A",
         model="test-model",
-        dimensions=3,
-        vector=[0.1, 0.2, 0.3],
+        dimensions=1024,
+        vector=[0.1] * 1024,  # 1024 dimensions
     )
     db.add(embedding_a)
     await db.commit()
     await db.refresh(embedding_a)
 
-    # Create embedding for org B
+    # Create embedding for org B with correct dimensions (1024)
     await set_org_context(db, org_b.id)
     embedding_b = Embedding(
         org_id=org_b.id,
         content="Test content B",
         model="test-model",
-        dimensions=3,
-        vector=[0.4, 0.5, 0.6],
+        dimensions=1024,
+        vector=[0.4] * 1024,  # 1024 dimensions
     )
     db.add(embedding_b)
     await db.commit()

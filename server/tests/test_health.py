@@ -32,8 +32,12 @@ def test_health_check_success(client):
 def test_health_check_response_format(client):
     """Test health check response has correct format."""
     response = client.get("/api/v1/health")
-    data = response.json()
+    json_response = response.json()
 
+    # Response is wrapped in StandardResponse format
+    assert "data" in json_response
+    data = json_response["data"]
+    
     assert "status" in data
     assert "environment" in data
     assert "version" in data
@@ -53,7 +57,11 @@ def test_health_check_response_format(client):
 def test_health_check_environment(client):
     """Test health check returns environment."""
     response = client.get("/api/v1/health")
-    data = response.json()
+    json_response = response.json()
+    
+    # Response is wrapped in StandardResponse format
+    assert "data" in json_response
+    data = json_response["data"]
 
     assert data["environment"] in ["local", "staging", "production"]
 
