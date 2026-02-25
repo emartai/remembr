@@ -59,5 +59,5 @@ def test_method_not_allowed_error(client):
     data = response.json()
 
     assert "error" in data
-    # Error code format changed from HTTP_405 to METHOD_NOT_ALLOWED
-    assert data["error"]["code"] == "METHOD_NOT_ALLOWED"
+    # Error code for unmapped status codes is HTTP_{status_code}
+    assert data["error"]["code"] == "HTTP_405"

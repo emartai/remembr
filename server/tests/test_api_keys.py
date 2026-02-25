@@ -82,7 +82,7 @@ class TestCreateAPIKeyEndpoint:
                 "org_name": "Test Org",
             },
         )
-        access_token = response.json()["access_token"]
+        access_token = response.json()["data"]["access_token"]
 
         # Create API key
         response = await client.post(
@@ -94,7 +94,7 @@ class TestCreateAPIKeyEndpoint:
         )
 
         assert response.status_code == status.HTTP_201_CREATED
-        data = response.json()
+        data = response.json()["data"]
 
         assert "id" in data
         assert data["name"] == "Test API Key"
@@ -122,7 +122,7 @@ class TestCreateAPIKeyEndpoint:
                 "org_name": "Test Org",
             },
         )
-        access_token = response.json()["access_token"]
+        access_token = response.json()["data"]["access_token"]
 
         # Create API key with expiration
         expires_at = (datetime.now(UTC) + timedelta(days=30)).isoformat()
@@ -136,7 +136,7 @@ class TestCreateAPIKeyEndpoint:
         )
 
         assert response.status_code == status.HTTP_201_CREATED
-        data = response.json()
+        data = response.json()["data"]
 
         assert data["expires_at"] is not None
 
@@ -147,7 +147,7 @@ class TestCreateAPIKeyEndpoint:
             json={"name": "Test Key"},
         )
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     async def test_create_api_key_invalid_name(self, client: AsyncClient):
         """Test creating API key with invalid name."""
@@ -160,7 +160,7 @@ class TestCreateAPIKeyEndpoint:
                 "org_name": "Test Org",
             },
         )
-        access_token = response.json()["access_token"]
+        access_token = response.json()["data"]["access_token"]
 
         # Try to create key with empty name
         response = await client.post(
@@ -187,7 +187,7 @@ class TestListAPIKeysEndpoint:
                 "org_name": "Test Org",
             },
         )
-        access_token = response.json()["access_token"]
+        access_token = response.json()["data"]["access_token"]
 
         # List keys
         response = await client.get(
@@ -196,7 +196,7 @@ class TestListAPIKeysEndpoint:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        data = response.json()
+        data = response.json()["data"]
 
         assert data["keys"] == []
         assert data["total"] == 0
@@ -212,7 +212,7 @@ class TestListAPIKeysEndpoint:
                 "org_name": "Test Org",
             },
         )
-        access_token = response.json()["access_token"]
+        access_token = response.json()["data"]["access_token"]
 
         # Create multiple keys
         await client.post(
@@ -233,7 +233,7 @@ class TestListAPIKeysEndpoint:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        data = response.json()
+        data = response.json()["data"]
 
         assert len(data["keys"]) == 2
         assert data["total"] == 2
@@ -250,7 +250,7 @@ class TestListAPIKeysEndpoint:
         """Test listing API keys without authentication."""
         response = await client.get("/api/v1/api-keys")
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     async def test_list_api_keys_org_isolation(self, client: AsyncClient):
         """Test that users only see keys from their organization."""
@@ -263,7 +263,7 @@ class TestListAPIKeysEndpoint:
                 "org_name": "Org 1",
             },
         )
-        token1 = response.json()["access_token"]
+        token1 = response.json()["data"]["access_token"]
 
         # Register user 2
         response = await client.post(
@@ -274,7 +274,7 @@ class TestListAPIKeysEndpoint:
                 "org_name": "Org 2",
             },
         )
-        token2 = response.json()["access_token"]
+        token2 = response.json()["data"]["access_token"]
 
         # User 1 creates a key
         await client.post(
@@ -295,7 +295,7 @@ class TestListAPIKeysEndpoint:
             "/api/v1/api-keys",
             headers={"Authorization": f"Bearer {token1}"},
         )
-        data = response.json()
+        data = response.json()["data"]
         assert len(data["keys"]) == 1
         assert data["keys"][0]["name"] == "User 1 Key"
 
@@ -304,7 +304,7 @@ class TestListAPIKeysEndpoint:
             "/api/v1/api-keys",
             headers={"Authorization": f"Bearer {token2}"},
         )
-        data = response.json()
+        data = response.json()["data"]
         assert len(data["keys"]) == 1
         assert data["keys"][0]["name"] == "User 2 Key"
 
@@ -324,7 +324,7 @@ class TestRevokeAPIKeyEndpoint:
                 "org_name": "Test Org",
             },
         )
-        access_token = response.json()["access_token"]
+        access_token = response.json()["data"]["access_token"]
 
         # Create API key
         response = await client.post(
@@ -332,7 +332,7 @@ class TestRevokeAPIKeyEndpoint:
             headers={"Authorization": f"Bearer {access_token}"},
             json={"name": "Key to Revoke"},
         )
-        key_id = response.json()["id"]
+        key_id = response.json()["data"]["id"]
 
         # Revoke key
         response = await client.delete(
@@ -340,7 +340,7 @@ class TestRevokeAPIKeyEndpoint:
             headers={"Authorization": f"Bearer {access_token}"},
         )
 
-        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert response.status_code == status.HTTP_200_OK
 
         # Verify key is expired in database
         result = await db.execute(select(APIKey).where(APIKey.id == key_id))
@@ -361,7 +361,7 @@ class TestRevokeAPIKeyEndpoint:
                 "org_name": "Test Org",
             },
         )
-        access_token = response.json()["access_token"]
+        access_token = response.json()["data"]["access_token"]
 
         # Try to revoke non-existent key
         fake_id = str(uuid.uuid4())
@@ -383,14 +383,14 @@ class TestRevokeAPIKeyEndpoint:
                 "org_name": "Org 1",
             },
         )
-        token1 = response.json()["access_token"]
+        token1 = response.json()["data"]["access_token"]
 
         response = await client.post(
             "/api/v1/api-keys",
             headers={"Authorization": f"Bearer {token1}"},
             json={"name": "Org 1 Key"},
         )
-        key_id = response.json()["id"]
+        key_id = response.json()["data"]["id"]
 
         # Register user 2
         response = await client.post(
@@ -401,7 +401,7 @@ class TestRevokeAPIKeyEndpoint:
                 "org_name": "Org 2",
             },
         )
-        token2 = response.json()["access_token"]
+        token2 = response.json()["data"]["access_token"]
 
         # User 2 tries to revoke user 1's key
         response = await client.delete(
@@ -416,7 +416,7 @@ class TestRevokeAPIKeyEndpoint:
         fake_id = str(uuid.uuid4())
         response = await client.delete(f"/api/v1/api-keys/{fake_id}")
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.asyncio
@@ -434,14 +434,14 @@ class TestAPIKeyAuthentication:
                 "org_name": "Test Org",
             },
         )
-        access_token = response.json()["access_token"]
+        access_token = response.json()["data"]["access_token"]
 
         response = await client.post(
             "/api/v1/api-keys",
             headers={"Authorization": f"Bearer {access_token}"},
             json={"name": "Auth Test Key"},
         )
-        api_key = response.json()["api_key"]
+        api_key = response.json()["data"]["api_key"]
 
         # Use API key to access endpoint (using health endpoint as test)
         # Note: In a real scenario, you'd have an endpoint that accepts API key auth
@@ -470,9 +470,9 @@ class TestAPIKeyAuthentication:
                 "org_name": "Test Org",
             },
         )
-        access_token = response.json()["access_token"]
+        access_token = response.json()["data"]["access_token"]
 
-        # Create key with past expiration
+        # Create API key with expiration
         past_time = (datetime.now(UTC) - timedelta(days=1)).isoformat()
         response = await client.post(
             "/api/v1/api-keys",
@@ -485,6 +485,8 @@ class TestAPIKeyAuthentication:
 
         # Key should be created but already expired
         assert response.status_code == status.HTTP_201_CREATED
+        data = response.json()["data"]
+        assert data["expires_at"] is not None
 
 
 @pytest.mark.asyncio
@@ -502,15 +504,15 @@ class TestAPIKeyCaching:
                 "org_name": "Test Org",
             },
         )
-        access_token = response.json()["access_token"]
+        access_token = response.json()["data"]["access_token"]
 
         response = await client.post(
             "/api/v1/api-keys",
             headers={"Authorization": f"Bearer {access_token}"},
             json={"name": "Cached Key"},
         )
-        key_id = response.json()["id"]
-        response.json()["api_key"]
+        key_id = response.json()["data"]["id"]
+        response.json()["data"]["api_key"]
 
         # TODO: Use the key to populate cache
         # Then revoke and verify cache is cleared
@@ -521,4 +523,4 @@ class TestAPIKeyCaching:
             headers={"Authorization": f"Bearer {access_token}"},
         )
 
-        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert response.status_code == status.HTTP_200_OK

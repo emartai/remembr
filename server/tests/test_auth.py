@@ -201,8 +201,8 @@ class TestRegisterEndpoint:
 
         assert response.status_code == status.HTTP_409_CONFLICT
         json_response = response.json()
-        assert "detail" in json_response
-        assert "already registered" in json_response["detail"].lower()
+        assert "error" in json_response
+        assert "already registered" in json_response["error"]["message"].lower()
 
     async def test_register_invalid_email(self, client: AsyncClient):
         """Test registration with invalid email."""
@@ -295,8 +295,8 @@ class TestLoginEndpoint:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         json_response = response.json()
-        assert "detail" in json_response
-        assert "incorrect" in json_response["detail"].lower()
+        assert "error" in json_response
+        assert "incorrect" in json_response["error"]["message"].lower()
 
     async def test_login_nonexistent_user(self, client: AsyncClient):
         """Test login with non-existent user."""
@@ -340,8 +340,8 @@ class TestLoginEndpoint:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         json_response = response.json()
-        assert "detail" in json_response
-        assert "inactive" in json_response["detail"].lower()
+        assert "error" in json_response
+        assert "inactive" in json_response["error"]["message"].lower()
 
 
 @pytest.mark.asyncio
@@ -437,8 +437,8 @@ class TestRefreshEndpoint:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         json_response = response.json()
-        assert "detail" in json_response
-        assert "invalidated" in json_response["detail"].lower()
+        assert "error" in json_response
+        assert "invalidated" in json_response["error"]["message"].lower()
 
 
 @pytest.mark.asyncio
@@ -465,7 +465,7 @@ class TestLogoutEndpoint:
             json={"refresh_token": refresh_token},
         )
 
-        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert response.status_code == status.HTTP_200_OK
 
     async def test_logout_with_access_token(self, client: AsyncClient):
         """Test logout with access token (should fail)."""
@@ -526,6 +526,8 @@ class TestMeEndpoint:
         assert "org_id" in data
         assert "is_active" in data
         assert "created_at" in data
+        # Verify it's a dict, not a User model instance
+        assert isinstance(data, dict)
         assert "hashed_password" not in data  # Should never be exposed
 
     async def test_get_me_no_token(self, client: AsyncClient):
