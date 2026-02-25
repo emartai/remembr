@@ -151,7 +151,11 @@ class TestRegisterEndpoint:
         )
 
         assert response.status_code == status.HTTP_201_CREATED
-        data = response.json()
+        json_response = response.json()
+        
+        # Response is wrapped in StandardResponse format
+        assert "data" in json_response
+        data = json_response["data"]
 
         assert "access_token" in data
         assert "refresh_token" in data
