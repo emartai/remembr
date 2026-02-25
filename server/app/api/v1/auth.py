@@ -67,7 +67,7 @@ class RefreshResponse(BaseModel):
 
 class UserResponse(BaseModel):
     model_config = {"from_attributes": True}
-    
+
     id: uuid.UUID
     email: str
     org_id: uuid.UUID
