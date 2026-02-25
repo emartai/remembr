@@ -32,9 +32,7 @@ async def set_org_context(session: AsyncSession, org_id: uuid.UUID | str) -> Non
 
     # SET LOCAL doesn't support parameterized queries, so we use string formatting
     # The org_id is a UUID string, so it's safe from SQL injection
-    await session.execute(
-        text(f"SET LOCAL app.current_org_id = '{org_id_str}'")
-    )
+    await session.execute(text(f"SET LOCAL app.current_org_id = '{org_id_str}'"))
 
     logger.debug("Organization context set", org_id=org_id_str)
 
