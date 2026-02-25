@@ -1,8 +1,96 @@
 # Deployment Guide
 
-This guide covers deploying Remembr to Railway with Supabase (PostgreSQL + pgvector) and Upstash (Redis).
+This guide covers deploying Remembr to production environments including Railway, Docker, Docker Compose, and Kubernetes.
 
-## Prerequisites
+---
+
+## Table of Contents
+
+1. [Deployment Options](#deployment-options)
+2. [Railway Deployment](#railway-deployment)
+3. [Docker Deployment](#docker-deployment)
+4. [Docker Compose Deployment](#docker-compose-deployment)
+5. [Kubernetes Deployment](#kubernetes-deployment)
+6. [Environment Configuration](#environment-configuration)
+7. [Database Setup](#database-setup)
+8. [Monitoring & Scaling](#monitoring--scaling)
+9. [Security Checklist](#security-checklist)
+
+---
+
+## Deployment Options
+
+### Quick Comparison
+
+| Option | Best For | Complexity | Cost | Scale |
+|--------|----------|------------|------|-------|
+| **Railway** | Quick start, MVP | Low | $5-50/mo | Low-Medium |
+| **Docker** | Single server | Medium | Variable | Low |
+| **Docker Compose** | Development, small teams | Medium | Variable | Low-Medium |
+| **Kubernetes** | Enterprise, high scale | High | Variable | High |
+
+### Architecture Overview
+
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        SDK[SDK/Adapters]
+    end
+    
+    subgraph "Deployment Platform"
+        LB[Load Balancer]
+        API1[API Instance 1]
+        API2[API Instance 2]
+        APIN[API Instance N]
+    end
+    
+    subgraph "Managed Services"
+        PG[(PostgreSQL<br/>+ pgvector)]
+        REDIS[(Redis)]
+        JINA[Jina AI<br/>Embeddings]
+    end
+    
+    subgraph "Monitoring"
+        LOGS[Logs]
+        METRICS[Metrics]
+        ALERTS[Alerts]
+    end
+    
+    SDK --> LB
+    LB --> API1
+    LB --> API2
+    LB --> APIN
+    
+    API1 --> PG
+    API1 --> REDIS
+    API1 --> JINA
+    
+    API2 --> PG
+    API2 --> REDIS
+    API2 --> JINA
+    
+    APIN --> PG
+    APIN --> REDIS
+    APIN --> JINA
+    
+    API1 --> LOGS
+    API2 --> LOGS
+    APIN --> LOGS
+    
+    LOGS --> METRICS
+    METRICS --> ALERTS
+    
+    style LB fill:#4A90E2
+    style PG fill:#336791
+    style REDIS fill:#DC382D
+    style JINA fill:#FF6B6B
+```
+
+---
+
+## Railway Deployment
+
+### Prerequisites
 
 - GitHub account with repository access
 - Railway account (https://railway.app)
@@ -10,7 +98,7 @@ This guide covers deploying Remembr to Railway with Supabase (PostgreSQL + pgvec
 - Upstash account (https://upstash.com)
 - Jina AI API key (https://jina.ai)
 
-## Architecture
+### Railway Architecture
 
 ```
 Railway (API Server)
@@ -360,3 +448,636 @@ Check Railway logs for errors:
 - [ ] Sentry DSN is configured for error tracking
 - [ ] All secrets are stored in Railway environment variables, not in code
 - [ ] `.env` files are in `.gitignore`
+
+---
+
+## Docker Deployment
+
+### Single Container Deployment
+
+**Dockerfile** (already included in repository):
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY server/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application
+COPY server/ ./server/
+COPY sdk/python/ ./sdk/python/
+
+# Install SDK
+RUN pip install -e ./sdk/python
+
+WORKDIR /app/server
+
+# Run migrations and start server
+CMD alembic upgrade head && \
+    uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}
+```
+
+### Build and Run
+
+```bash
+# Build image
+docker build -t remembr:latest .
+
+# Run container
+docker run -d \
+  --name remembr-api \
+  -p 8000:8000 \
+  -e DATABASE_URL="postgresql://..." \
+  -e REDIS_URL="redis://..." \
+  -e SECRET_KEY="your-secret-key" \
+  -e JINA_API_KEY="your-jina-key" \
+  remembr:latest
+
+# View logs
+docker logs -f remembr-api
+
+# Stop container
+docker stop remembr-api
+```
+
+---
+
+## Docker Compose Deployment
+
+### Full Stack with Docker Compose
+
+**docker-compose.yml**:
+```yaml
+version: '3.8'
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg15
+    environment:
+      POSTGRES_DB: remembr
+      POSTGRES_USER: remembr
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U remembr"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://remembr:${DB_PASSWORD}@postgres:5432/remembr
+      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      SECRET_KEY: ${SECRET_KEY}
+      JINA_API_KEY: ${JINA_API_KEY}
+      ENVIRONMENT: production
+      LOG_LEVEL: INFO
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  postgres_data:
+  redis_data:
+```
+
+### Deploy with Docker Compose
+
+```bash
+# Create .env file
+cat > .env << EOF
+DB_PASSWORD=$(openssl rand -hex 16)
+REDIS_PASSWORD=$(openssl rand -hex 16)
+SECRET_KEY=$(openssl rand -hex 32)
+JINA_API_KEY=your-jina-api-key
+EOF
+
+# Start services
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Check status
+docker-compose ps
+
+# Stop services
+docker-compose down
+
+# Stop and remove volumes
+docker-compose down -v
+```
+
+---
+
+## Kubernetes Deployment
+
+### Kubernetes Architecture
+
+```mermaid
+graph TB
+    subgraph "Ingress"
+        ING[Ingress Controller<br/>NGINX/Traefik]
+    end
+    
+    subgraph "Kubernetes Cluster"
+        subgraph "API Deployment"
+            API1[API Pod 1]
+            API2[API Pod 2]
+            API3[API Pod N]
+        end
+        
+        SVC[Service<br/>ClusterIP]
+        
+        subgraph "StatefulSets"
+            PG[PostgreSQL<br/>StatefulSet]
+            REDIS[Redis<br/>StatefulSet]
+        end
+        
+        subgraph "Storage"
+            PVC1[PVC - Postgres]
+            PVC2[PVC - Redis]
+        end
+    end
+    
+    ING --> SVC
+    SVC --> API1
+    SVC --> API2
+    SVC --> API3
+    
+    API1 --> PG
+    API2 --> PG
+    API3 --> PG
+    
+    API1 --> REDIS
+    API2 --> REDIS
+    API3 --> REDIS
+    
+    PG --> PVC1
+    REDIS --> PVC2
+    
+    style ING fill:#4A90E2
+    style SVC fill:#50C878
+    style PG fill:#336791
+    style REDIS fill:#DC382D
+```
+
+### Kubernetes Manifests
+
+**namespace.yaml**:
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: remembr
+```
+
+**configmap.yaml**:
+```yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: remembr-config
+  namespace: remembr
+data:
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "INFO"
+  JINA_EMBEDDING_MODEL: "jina-embeddings-v3"
+```
+
+**secret.yaml**:
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: remembr-secrets
+  namespace: remembr
+type: Opaque
+stringData:
+  DATABASE_URL: "postgresql://user:pass@postgres:5432/remembr"
+  REDIS_URL: "redis://:pass@redis:6379/0"
+  SECRET_KEY: "your-secret-key"
+  JINA_API_KEY: "your-jina-key"
+```
+
+**deployment.yaml**:
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: remembr-api
+  namespace: remembr
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: remembr-api
+  template:
+    metadata:
+      labels:
+        app: remembr-api
+    spec:
+      containers:
+      - name: api
+        image: remembr:latest
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: remembr-config
+        - secretRef:
+            name: remembr-secrets
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+```
+
+**service.yaml**:
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: remembr-api
+  namespace: remembr
+spec:
+  selector:
+    app: remembr-api
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8000
+  type: ClusterIP
+```
+
+**ingress.yaml**:
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: remembr-ingress
+  namespace: remembr
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - api.remembr.com
+    secretName: remembr-tls
+  rules:
+  - host: api.remembr.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: remembr-api
+            port:
+              number: 80
+```
+
+### Deploy to Kubernetes
+
+```bash
+# Create namespace
+kubectl apply -f k8s/namespace.yaml
+
+# Create secrets (use your actual values)
+kubectl create secret generic remembr-secrets \
+  --from-literal=DATABASE_URL="postgresql://..." \
+  --from-literal=REDIS_URL="redis://..." \
+  --from-literal=SECRET_KEY="$(openssl rand -hex 32)" \
+  --from-literal=JINA_API_KEY="your-key" \
+  -n remembr
+
+# Apply configurations
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/deployment.yaml
+kubectl apply -f k8s/service.yaml
+kubectl apply -f k8s/ingress.yaml
+
+# Check status
+kubectl get pods -n remembr
+kubectl get svc -n remembr
+kubectl get ingress -n remembr
+
+# View logs
+kubectl logs -f deployment/remembr-api -n remembr
+
+# Scale deployment
+kubectl scale deployment remembr-api --replicas=5 -n remembr
+```
+
+---
+
+## Environment Configuration
+
+### Environment Variables Reference
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `DATABASE_URL` | Yes | - | PostgreSQL connection string |
+| `REDIS_URL` | Yes | - | Redis connection string |
+| `SECRET_KEY` | Yes | - | JWT signing key (32+ chars) |
+| `JINA_API_KEY` | Yes | - | Jina AI API key for embeddings |
+| `ENVIRONMENT` | No | `development` | Environment name |
+| `LOG_LEVEL` | No | `INFO` | Logging level |
+| `JINA_EMBEDDING_MODEL` | No | `jina-embeddings-v3` | Jina model name |
+| `ACCESS_TOKEN_EXPIRE_MINUTES` | No | `30` | JWT access token TTL |
+| `REFRESH_TOKEN_EXPIRE_DAYS` | No | `7` | JWT refresh token TTL |
+| `RATE_LIMIT_ENABLED` | No | `true` | Enable rate limiting |
+| `RATE_LIMIT_REQUESTS` | No | `1000` | Requests per window |
+| `RATE_LIMIT_WINDOW` | No | `60` | Rate limit window (seconds) |
+| `SENTRY_DSN` | No | - | Sentry error tracking DSN |
+| `CORS_ORIGINS` | No | `["*"]` | Allowed CORS origins |
+
+### Generate Secrets
+
+```bash
+# Generate SECRET_KEY
+openssl rand -hex 32
+
+# Or with Python
+python -c "import secrets; print(secrets.token_hex(32))"
+
+# Generate strong passwords
+openssl rand -base64 32
+```
+
+---
+
+## Database Setup
+
+### PostgreSQL with pgvector
+
+**Enable pgvector extension**:
+```sql
+CREATE EXTENSION IF NOT EXISTS vector;
+```
+
+**Run migrations**:
+```bash
+# Using Alembic
+alembic upgrade head
+
+# Or in Docker
+docker exec remembr-api alembic upgrade head
+
+# Or in Kubernetes
+kubectl exec -it deployment/remembr-api -n remembr -- alembic upgrade head
+```
+
+### Database Backup
+
+```bash
+# Backup PostgreSQL
+pg_dump -h localhost -U remembr -d remembr > backup.sql
+
+# Restore PostgreSQL
+psql -h localhost -U remembr -d remembr < backup.sql
+
+# Backup with Docker
+docker exec postgres pg_dump -U remembr remembr > backup.sql
+
+# Restore with Docker
+docker exec -i postgres psql -U remembr remembr < backup.sql
+```
+
+---
+
+## Monitoring & Scaling
+
+### Health Checks
+
+```bash
+# API health
+curl https://your-api.com/api/v1/health
+
+# Database health
+curl https://your-api.com/api/v1/health/ready
+```
+
+### Metrics to Monitor
+
+- **Request rate** (req/s)
+- **Response time** (p50, p95, p99)
+- **Error rate** (%)
+- **Database connections**
+- **Redis memory usage**
+- **CPU and memory usage**
+
+### Horizontal Scaling
+
+**Railway**:
+- Enable multiple replicas in settings
+- Railway handles load balancing
+
+**Docker Compose**:
+```bash
+docker-compose up -d --scale api=3
+```
+
+**Kubernetes**:
+```bash
+kubectl scale deployment remembr-api --replicas=5 -n remembr
+
+# Or use HPA (Horizontal Pod Autoscaler)
+kubectl autoscale deployment remembr-api \
+  --cpu-percent=70 \
+  --min=3 \
+  --max=10 \
+  -n remembr
+```
+
+### Vertical Scaling
+
+Adjust resource limits in deployment configuration:
+```yaml
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "500m"
+  limits:
+    memory: "1Gi"
+    cpu: "1000m"
+```
+
+---
+
+## Security Checklist
+
+### Pre-Deployment
+
+- [ ] `SECRET_KEY` is randomly generated (32+ characters)
+- [ ] Database passwords are strong (16+ characters)
+- [ ] All secrets stored in environment variables, not code
+- [ ] `.env` files are in `.gitignore`
+- [ ] API keys have appropriate scopes and expiration
+
+### Production Configuration
+
+- [ ] `ENVIRONMENT=production` is set
+- [ ] `LOG_LEVEL=INFO` or `WARNING` (not `DEBUG`)
+- [ ] API documentation (`/docs`) is disabled
+- [ ] CORS origins are restricted to your domains
+- [ ] Rate limiting is enabled
+- [ ] TLS/HTTPS is enforced
+
+### Database Security
+
+- [ ] PostgreSQL uses strong password
+- [ ] Database is not publicly accessible
+- [ ] Row-level security (RLS) is enabled
+- [ ] Regular backups are configured
+- [ ] Connection pooling is configured
+
+### Monitoring & Alerts
+
+- [ ] Error tracking (Sentry) is configured
+- [ ] Health checks are enabled
+- [ ] Alerts for high error rates
+- [ ] Alerts for high latency
+- [ ] Alerts for service downtime
+
+---
+
+## Troubleshooting
+
+### Common Issues
+
+**Database Connection Errors**:
+```bash
+# Test connection
+psql $DATABASE_URL
+
+# Check if pgvector is installed
+psql $DATABASE_URL -c "SELECT * FROM pg_extension WHERE extname = 'vector';"
+```
+
+**Redis Connection Errors**:
+```bash
+# Test connection
+redis-cli -u $REDIS_URL ping
+
+# Check Redis info
+redis-cli -u $REDIS_URL info
+```
+
+**Migration Errors**:
+```bash
+# Check current version
+alembic current
+
+# View migration history
+alembic history
+
+# Downgrade one version
+alembic downgrade -1
+
+# Upgrade to latest
+alembic upgrade head
+```
+
+**Port Binding Issues**:
+- Ensure app binds to `0.0.0.0` not `127.0.0.1`
+- Use `$PORT` environment variable in containers
+- Check if port is already in use: `lsof -i :8000`
+
+---
+
+## Cost Estimation
+
+### Small Scale (< 1K users)
+
+| Service | Provider | Cost/Month |
+|---------|----------|------------|
+| API Server | Railway Hobby | $5-10 |
+| PostgreSQL | Supabase Free | $0 |
+| Redis | Upstash Free | $0 |
+| **Total** | | **$5-10** |
+
+### Medium Scale (1K-10K users)
+
+| Service | Provider | Cost/Month |
+|---------|----------|------------|
+| API Server | Railway Pro | $20-50 |
+| PostgreSQL | Supabase Pro | $25 |
+| Redis | Upstash | $10-30 |
+| Monitoring | Sentry Team | $26 |
+| **Total** | | **$81-131** |
+
+### Large Scale (10K+ users)
+
+| Service | Provider | Cost/Month |
+|---------|----------|------------|
+| API Server | Kubernetes (3 nodes) | $150-300 |
+| PostgreSQL | Managed (RDS/Cloud SQL) | $100-500 |
+| Redis | Managed (ElastiCache) | $50-200 |
+| Monitoring | Datadog/New Relic | $100-500 |
+| **Total** | | **$400-1500** |
+
+---
+
+## Support
+
+For deployment assistance:
+- **GitHub Issues**: [Report deployment issues](https://github.com/emartai/remembr/issues)
+- **Email**: [nwangumaemmanuel29@gmail.com](mailto:nwangumaemmanuel29@gmail.com)
+- **Documentation**: [docs/](docs/)
+
+---
+
+**Last Updated**: February 25, 2026  
+**Maintainer**: [Emmanuel Nwanguma](https://linkedin.com/in/nwangumaemmanuel)
