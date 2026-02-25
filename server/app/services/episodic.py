@@ -172,7 +172,7 @@ class EpisodicMemory:
         vector_literal = _to_pgvector_literal(query_vector)
 
         sql = text(
-            """
+            f"""
             SELECT
                 e.id,
                 e.org_id,
@@ -185,14 +185,14 @@ class EpisodicMemory:
                 e.tags,
                 e.metadata,
                 e.created_at,
-                1 - (emb.vector <=> :query_vector::vector) AS similarity_score
+                1 - (emb.vector <=> '{vector_literal}'::vector) AS similarity_score
             FROM embeddings emb
             JOIN episodes e ON e.id = emb.episode_id
             WHERE e.org_id = :org_id
               AND e.team_id IS NOT DISTINCT FROM :team_id
               AND e.user_id IS NOT DISTINCT FROM :user_id
               AND e.agent_id IS NOT DISTINCT FROM :agent_id
-              AND 1 - (emb.vector <=> :query_vector::vector) >= :score_threshold
+              AND 1 - (emb.vector <=> '{vector_literal}'::vector) >= :score_threshold
             ORDER BY similarity_score DESC
             LIMIT :limit
             """
@@ -204,7 +204,6 @@ class EpisodicMemory:
                 "team_id": _as_uuid(scope.team_id),
                 "user_id": _as_uuid(scope.user_id),
                 "agent_id": _as_uuid(scope.agent_id),
-                "query_vector": vector_literal,
                 "score_threshold": score_threshold,
                 "limit": limit,
             },
@@ -234,14 +233,14 @@ class EpisodicMemory:
         vector_literal = _to_pgvector_literal(query_vector)
 
         sql = text(
-            """
+            f"""
             WITH semantic_candidates AS (
                 SELECT
                     emb.episode_id,
-                    1 - (emb.vector <=> :query_vector::vector) AS similarity_score
+                    1 - (emb.vector <=> '{vector_literal}'::vector) AS similarity_score
                 FROM embeddings emb
                 WHERE emb.org_id = :org_id
-                  AND 1 - (emb.vector <=> :query_vector::vector) >= :score_threshold
+                  AND 1 - (emb.vector <=> '{vector_literal}'::vector) >= :score_threshold
                 ORDER BY similarity_score DESC
                 LIMIT 50
             )

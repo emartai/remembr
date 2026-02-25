@@ -37,7 +37,6 @@ def configure_logging() -> None:
     # Add JSON structured logging
     logger.add(
         sys.stdout,
-        format="{extra[serialized]}",
         level=settings.log_level,
         serialize=True,
     )

@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from time import perf_counter
-from typing import Annotated, Any
+from typing import Annotated, Any, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, Request, status
+from fastapi import APIRouter, Depends, Query, Request, Response, status
 from pydantic import BaseModel, Field
 from redis.asyncio import Redis
 from sqlalchemy import func, select
@@ -461,10 +461,11 @@ async def restore_session_checkpoint(
 @router.post("/memory/search", response_model=StandardResponse[MemorySearchResponse])
 @limiter.limit(get_search_limit)
 async def search_memory(
+    request: Request,
+    response: Response,
     payload: MemoryQueryRequest,
     ctx: Annotated[RequestContext, Depends(require_auth)],
     db: Annotated[AsyncSession, Depends(get_db)],
-    request: Request | None = None,
 ) -> StandardResponse[MemorySearchResponse]:
     scope = ScopeResolver.resolve_writable_scope(ScopeResolver.from_request_context(ctx))
     engine = MemoryQueryEngine(EpisodicMemory(db=db))

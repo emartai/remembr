@@ -8,6 +8,7 @@ Create Date: 2026-02-23 19:00:00.000000
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+from pgvector.sqlalchemy import Vector
 
 # revision identifiers, used by Alembic.
 revision = '002'
@@ -30,7 +31,7 @@ def upgrade() -> None:
         sa.Column('content', sa.Text(), nullable=False),
         sa.Column('model', sa.String(length=100), nullable=False),
         sa.Column('dimensions', sa.Integer(), nullable=False),
-        sa.Column('vector', postgresql.ARRAY(sa.Float()), nullable=False),
+        sa.Column('vector', Vector(1024), nullable=False),
         sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.Column('updated_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
         sa.ForeignKeyConstraint(['episode_id'], ['episodes.id'], ondelete='CASCADE'),
@@ -47,6 +48,7 @@ def upgrade() -> None:
 
     # Create HNSW index for fast approximate nearest neighbor search
     # Using cosine distance operator (<=>)
+    # Jina embeddings v3 uses 1024 dimensions
     op.execute(
         'CREATE INDEX ix_embeddings_vector_cosine ON embeddings '
         'USING hnsw (vector vector_cosine_ops)'

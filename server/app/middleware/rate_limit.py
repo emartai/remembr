@@ -76,6 +76,10 @@ def create_limiter() -> Limiter:
         storage_uri=redis_url,
         default_limits=[get_default_limit()],
         headers_enabled=True,
+        storage_options={
+            "socket_connect_timeout": 1,
+            "socket_timeout": 1,
+        },
     )
 
 
@@ -89,5 +93,23 @@ def setup_rate_limiting(app) -> None:
     if not _SLOWAPI_AVAILABLE:
         return
 
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    # Custom error handler that safely handles TimeoutError
+    async def custom_rate_limit_handler(request: Request, exc: Exception):
+        detail = getattr(exc, 'detail', str(exc))
+        request_id = getattr(request.state, 'request_id', 'unknown')
+        
+        from fastapi.responses import JSONResponse
+        return JSONResponse(
+            {
+                "error": {
+                    "code": "RATE_LIMIT_EXCEEDED",
+                    "message": f"Rate limit exceeded: {detail}",
+                    "details": None,
+                    "request_id": request_id
+                }
+            },
+            status_code=429
+        )
+    
+    app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
     app.add_middleware(SlowAPIMiddleware)

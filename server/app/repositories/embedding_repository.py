@@ -93,7 +93,7 @@ class EmbeddingRepository:
         # Use pgvector's cosine similarity operator
         # 1 - (vector <=> query) gives similarity score (0-1)
         query = text(
-            """
+            f"""
             SELECT 
                 id,
                 org_id,
@@ -105,11 +105,11 @@ class EmbeddingRepository:
                 vector,
                 created_at,
                 updated_at,
-                1 - (vector <=> :query_vector::vector) as similarity
+                1 - (vector <=> '{vector_str}'::vector) as similarity
             FROM embeddings
             WHERE org_id = :org_id
-                AND 1 - (vector <=> :query_vector::vector) >= :threshold
-            ORDER BY vector <=> :query_vector::vector
+                AND 1 - (vector <=> '{vector_str}'::vector) >= :threshold
+            ORDER BY vector <=> '{vector_str}'::vector
             LIMIT :limit
             """
         )
@@ -118,7 +118,6 @@ class EmbeddingRepository:
             query,
             {
                 "org_id": org_id,
-                "query_vector": vector_str,
                 "threshold": threshold,
                 "limit": limit,
             },

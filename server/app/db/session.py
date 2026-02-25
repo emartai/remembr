@@ -25,6 +25,7 @@ engine = create_async_engine(
     max_overflow=settings.db_max_overflow,
     pool_timeout=settings.db_pool_timeout,
     pool_recycle=settings.db_pool_recycle,
+    connect_args={"statement_cache_size": 0},  # Required for Supabase transaction pooler
 )
 
 # Create async session factory
