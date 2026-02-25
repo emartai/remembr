@@ -104,4 +104,3 @@ class MemoryFact(Base, UUIDMixin, TimestampMixin):
             f"predicate={self.predicate[:20]}, "
             f"org_id={self.org_id})>"
         )
-

@@ -292,8 +292,7 @@ class MemoryQueryEngine:
                 filtered = [ep for ep in filtered if ep.role == request.role]
             if request.tags:
                 filtered = [
-                    ep for ep in filtered
-                    if set(request.tags).intersection(set(ep.tags or []))
+                    ep for ep in filtered if set(request.tags).intersection(set(ep.tags or []))
                 ]
 
             for ep in filtered[request.offset : request.offset + request.limit]:
@@ -336,13 +335,16 @@ async def create_session(
     await db.refresh(session)
     await db.commit()
 
-    return success(CreateSessionResponse(
+    return success(
+        CreateSessionResponse(
+            request_id=ctx.request_id,
+            session_id=str(session.id),
+            org_id=str(session.org_id),
+            created_at=session.created_at,
+            metadata=session.metadata_,
+        ),
         request_id=ctx.request_id,
-        session_id=str(session.id),
-        org_id=str(session.org_id),
-        created_at=session.created_at,
-        metadata=session.metadata_,
-    ), request_id=ctx.request_id)
+    )
 
 
 @router.post(
@@ -387,13 +389,16 @@ async def log_memory(
 
     await db.commit()
 
-    return success(LogMemoryResponse(
+    return success(
+        LogMemoryResponse(
+            request_id=ctx.request_id,
+            episode_id=str(episode.id),
+            session_id=str(episode.session_id) if episode.session_id is not None else None,
+            created_at=episode.created_at,
+            token_count=token_count,
+        ),
         request_id=ctx.request_id,
-        episode_id=str(episode.id),
-        session_id=str(episode.session_id) if episode.session_id is not None else None,
-        created_at=episode.created_at,
-        token_count=token_count,
-    ), request_id=ctx.request_id)
+    )
 
 
 @router.post(
@@ -420,12 +425,15 @@ async def create_session_checkpoint(
 
     await db.commit()
 
-    return success(SessionCheckpointResponse(
+    return success(
+        SessionCheckpointResponse(
+            request_id=ctx.request_id,
+            checkpoint_id=str(checkpoint_id),
+            created_at=checkpoint_episode.created_at,
+            message_count=int((checkpoint_episode.metadata_ or {}).get("message_count", 0)),
+        ),
         request_id=ctx.request_id,
-        checkpoint_id=str(checkpoint_id),
-        created_at=checkpoint_episode.created_at,
-        message_count=int((checkpoint_episode.metadata_ or {}).get("message_count", 0)),
-    ), request_id=ctx.request_id)
+    )
 
 
 @router.post(
@@ -442,14 +450,12 @@ async def restore_session_checkpoint(
     scope = ScopeResolver.resolve_writable_scope(ScopeResolver.from_request_context(ctx))
     await _require_session_in_scope(db, session_id, scope)
 
-    query = (
-        _apply_episode_scope_filters(
-            select(Episode)
-            .where(Episode.id == payload.checkpoint_id)
-            .where(Episode.session_id == session_id)
-            .where(Episode.role == "checkpoint"),
-            scope,
-        )
+    query = _apply_episode_scope_filters(
+        select(Episode)
+        .where(Episode.id == payload.checkpoint_id)
+        .where(Episode.session_id == session_id)
+        .where(Episode.role == "checkpoint"),
+        scope,
     )
     result = await db.execute(query)
     checkpoint_episode = result.scalar_one_or_none()
@@ -469,11 +475,14 @@ async def restore_session_checkpoint(
 
     await db.commit()
 
-    return success(RestoreSessionResponse(
+    return success(
+        RestoreSessionResponse(
+            request_id=ctx.request_id,
+            restored_message_count=restored_message_count,
+            checkpoint_created_at=checkpoint_episode.created_at,
+        ),
         request_id=ctx.request_id,
-        restored_message_count=restored_message_count,
-        checkpoint_created_at=checkpoint_episode.created_at,
-    ), request_id=ctx.request_id)
+    )
 
 
 @router.post("/memory/search", response_model=StandardResponse[MemorySearchResponse])
@@ -492,12 +501,15 @@ async def search_memory(
         await _require_session_in_scope(db, payload.session_id, scope)
 
     results, total, query_time_ms = await engine.query(scope, payload)
-    return success(MemorySearchResponse(
+    return success(
+        MemorySearchResponse(
+            request_id=ctx.request_id,
+            results=results,
+            total=total,
+            query_time_ms=query_time_ms,
+        ),
         request_id=ctx.request_id,
-        results=results,
-        total=total,
-        query_time_ms=query_time_ms,
-    ), request_id=ctx.request_id)
+    )
 
 
 @router.get("/sessions", response_model=StandardResponse[SessionListResponse])
@@ -546,13 +558,16 @@ async def list_sessions(
         for session in sessions
     ]
 
-    return success(SessionListResponse(
+    return success(
+        SessionListResponse(
+            request_id=ctx.request_id,
+            sessions=payload,
+            total=total,
+            limit=limit,
+            offset=offset,
+        ),
         request_id=ctx.request_id,
-        sessions=payload,
-        total=total,
-        limit=limit,
-        offset=offset,
-    ), request_id=ctx.request_id)
+    )
 
 
 @router.get("/sessions/{session_id}", response_model=StandardResponse[SessionDetailResponse])
@@ -572,17 +587,20 @@ async def get_session(
     max_tokens = short_term.MAX_TOKENS
     percentage = round((used_tokens / max_tokens) * 100, 2) if max_tokens > 0 else 0.0
 
-    return success(SessionDetailResponse(
-        request_id=ctx.request_id,
-        session=SessionDetail(
-            session_id=str(session.id),
-            org_id=str(session.org_id),
-            created_at=session.created_at,
-            metadata=session.metadata_,
+    return success(
+        SessionDetailResponse(
+            request_id=ctx.request_id,
+            session=SessionDetail(
+                session_id=str(session.id),
+                org_id=str(session.org_id),
+                created_at=session.created_at,
+                metadata=session.metadata_,
+            ),
+            messages=[SessionWindowMessage(**message.__dict__) for message in messages],
+            token_usage={"used": used_tokens, "max": max_tokens, "percentage": percentage},
         ),
-        messages=[SessionWindowMessage(**message.__dict__) for message in messages],
-        token_usage={"used": used_tokens, "max": max_tokens, "percentage": percentage},
-    ), request_id=ctx.request_id)
+        request_id=ctx.request_id,
+    )
 
 
 @router.get(
@@ -629,24 +647,27 @@ async def get_session_history(
     episodes_result = await db.execute(episodes_query)
     episodes = list(episodes_result.scalars().all())
 
-    return success(SessionHistoryResponse(
+    return success(
+        SessionHistoryResponse(
+            request_id=ctx.request_id,
+            episodes=[
+                SessionHistoryItem(
+                    episode_id=str(ep.id),
+                    session_id=str(ep.session_id) if ep.session_id else None,
+                    role=ep.role,
+                    content=ep.content,
+                    tags=ep.tags or [],
+                    metadata=ep.metadata_,
+                    created_at=ep.created_at,
+                )
+                for ep in episodes
+            ],
+            total=total,
+            limit=limit,
+            offset=offset,
+        ),
         request_id=ctx.request_id,
-        episodes=[
-            SessionHistoryItem(
-                episode_id=str(ep.id),
-                session_id=str(ep.session_id) if ep.session_id else None,
-                role=ep.role,
-                content=ep.content,
-                tags=ep.tags or [],
-                metadata=ep.metadata_,
-                created_at=ep.created_at,
-            )
-            for ep in episodes
-        ],
-        total=total,
-        limit=limit,
-        offset=offset,
-    ), request_id=ctx.request_id)
+    )
 
 
 @router.get(
@@ -665,10 +686,13 @@ async def list_session_checkpoints(
     short_term = ShortTermMemory(cache=CacheService(redis), db=db)
     checkpoints = await short_term.list_checkpoints(session_id=str(session_id), scope=scope)
 
-    return success(CheckpointListResponse(
+    return success(
+        CheckpointListResponse(
+            request_id=ctx.request_id,
+            checkpoints=[CheckpointListItem(**item) for item in checkpoints],
+        ),
         request_id=ctx.request_id,
-        checkpoints=[CheckpointListItem(**item) for item in checkpoints],
-    ), request_id=ctx.request_id)
+    )
 
 
 @router.delete("/memory/{episode_id}", response_model=StandardResponse[DeleteEpisodeResponse])
@@ -689,11 +713,14 @@ async def delete_memory_episode(
     if not deleted:
         raise NotFoundError("Episode not found", details={"code": EPISODE_NOT_FOUND})
 
-    return success(DeleteEpisodeResponse(
+    return success(
+        DeleteEpisodeResponse(
+            request_id=ctx.request_id,
+            deleted=True,
+            episode_id=str(episode_id),
+        ),
         request_id=ctx.request_id,
-        deleted=True,
-        episode_id=str(episode_id),
-    ), request_id=ctx.request_id)
+    )
 
 
 @router.delete(
@@ -717,11 +744,14 @@ async def delete_session_memories(
         actor_user_id=ctx.user_id,
     )
 
-    return success(DeleteSessionMemoriesResponse(
+    return success(
+        DeleteSessionMemoriesResponse(
+            request_id=ctx.request_id,
+            deleted_count=deleted_count,
+            session_id=str(session_id),
+        ),
         request_id=ctx.request_id,
-        deleted_count=deleted_count,
-        session_id=str(session_id),
-    ), request_id=ctx.request_id)
+    )
 
 
 @router.delete(
@@ -748,12 +778,15 @@ async def delete_user_memories(
         actor_user_id=ctx.user_id,
     )
 
-    return success(DeleteUserMemoriesResponse(
+    return success(
+        DeleteUserMemoriesResponse(
+            request_id=ctx.request_id,
+            deleted_episodes=result.deleted_episodes,
+            deleted_sessions=result.deleted_sessions,
+            user_id=str(user_id),
+        ),
         request_id=ctx.request_id,
-        deleted_episodes=result.deleted_episodes,
-        deleted_sessions=result.deleted_sessions,
-        user_id=str(user_id),
-    ), request_id=ctx.request_id)
+    )
 
 
 @router.get("/memory/diff", response_model=StandardResponse[MemoryDiffResponse])
@@ -805,9 +838,12 @@ async def memory_diff(
         for ep in episodes
     ]
 
-    return success(MemoryDiffResponse(
+    return success(
+        MemoryDiffResponse(
+            request_id=ctx.request_id,
+            added=added,
+            period={"from": from_time, "to": to_time},
+            count=len(added),
+        ),
         request_id=ctx.request_id,
-        added=added,
-        period={"from": from_time, "to": to_time},
-        count=len(added),
-    ), request_id=ctx.request_id)
+    )

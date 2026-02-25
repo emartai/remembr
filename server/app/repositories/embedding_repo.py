@@ -33,9 +33,7 @@ class EmbeddingRepository:
             Created Embedding instance
         """
         # Check if embedding already exists
-        result = await session.execute(
-            select(Embedding).where(Embedding.episode_id == episode_id)
-        )
+        result = await session.execute(select(Embedding).where(Embedding.episode_id == episode_id))
         existing = result.scalar_one_or_none()
 
         if existing:
@@ -83,9 +81,7 @@ class EmbeddingRepository:
         result = await session.execute(
             select(
                 Embedding.episode_id,
-                (1 - Embedding.embedding.cosine_distance(query_embedding)).label(
-                    "similarity"
-                ),
+                (1 - Embedding.embedding.cosine_distance(query_embedding)).label("similarity"),
             )
             .where(Embedding.org_id == org_id)
             .order_by(Embedding.embedding.cosine_distance(query_embedding))
@@ -118,9 +114,7 @@ class EmbeddingRepository:
         Returns:
             Embedding instance or None if not found
         """
-        result = await session.execute(
-            select(Embedding).where(Embedding.episode_id == episode_id)
-        )
+        result = await session.execute(select(Embedding).where(Embedding.episode_id == episode_id))
         return result.scalar_one_or_none()
 
     @staticmethod
@@ -138,9 +132,7 @@ class EmbeddingRepository:
         Returns:
             True if deleted, False if not found
         """
-        result = await session.execute(
-            select(Embedding).where(Embedding.episode_id == episode_id)
-        )
+        result = await session.execute(select(Embedding).where(Embedding.episode_id == episode_id))
         embedding = result.scalar_one_or_none()
 
         if embedding:

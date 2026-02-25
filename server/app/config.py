@@ -87,7 +87,6 @@ class Settings(BaseSettings):
         description="Logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)",
     )
 
-
     cors_origins: list[str] = Field(
         default_factory=list,
         description="Allowed CORS origins",
@@ -170,9 +169,7 @@ def get_test_settings() -> Settings:
     settings = get_settings()
 
     # Override database URL for testing
-    test_db_url = settings.database_url.get_secret_value().replace(
-        "/remembr", "/remembr_test"
-    )
+    test_db_url = settings.database_url.get_secret_value().replace("/remembr", "/remembr_test")
 
     return Settings(
         database_url=SecretStr(test_db_url),

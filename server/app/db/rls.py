@@ -49,9 +49,7 @@ async def get_org_context(session: AsyncSession) -> str | None:
     Returns:
         Organization ID string or None if not set
     """
-    result = await session.execute(
-        text("SELECT current_setting('app.current_org_id', true)")
-    )
+    result = await session.execute(text("SELECT current_setting('app.current_org_id', true)"))
     org_id = result.scalar_one_or_none()
     return org_id
 

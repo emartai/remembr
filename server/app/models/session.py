@@ -76,4 +76,3 @@ class Session(Base, UUIDMixin, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<Session(id={self.id}, org_id={self.org_id})>"
-

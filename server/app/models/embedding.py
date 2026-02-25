@@ -72,4 +72,3 @@ class Embedding(Base, UUIDMixin, TimestampMixin):
             f"dimensions={self.dimensions}, "
             f"org_id={self.org_id})>"
         )
-

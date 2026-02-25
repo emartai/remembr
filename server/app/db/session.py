@@ -16,9 +16,7 @@ settings = get_settings()
 
 # Create async engine
 engine = create_async_engine(
-    settings.database_url.get_secret_value().replace(
-        "postgresql://", "postgresql+asyncpg://"
-    ),
+    settings.database_url.get_secret_value().replace("postgresql://", "postgresql+asyncpg://"),
     echo=settings.log_level == "DEBUG",
     pool_pre_ping=True,
     pool_size=settings.db_pool_size,

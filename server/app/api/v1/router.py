@@ -53,12 +53,15 @@ async def health_check(request: Request):
 
     logger.debug("Health check requested", redis_status=redis_status)
 
-    return success({
-        "status": "ok",
-        "environment": settings.environment,
-        "version": "0.1.0",
-        "redis_status": redis_status,
-    }, request_id=request.state.request_id)
+    return success(
+        {
+            "status": "ok",
+            "environment": settings.environment,
+            "version": "0.1.0",
+            "redis_status": redis_status,
+        },
+        request_id=request.state.request_id,
+    )
 
 
 @router.get("/me", response_model=StandardResponse[dict])
@@ -83,9 +86,12 @@ async def get_current_context_info(
         auth_method=ctx.auth_method,
     )
 
-    return success({
-        "org_id": str(ctx.org_id),
-        "user_id": str(ctx.user_id) if ctx.user_id else None,
-        "agent_id": str(ctx.agent_id) if ctx.agent_id else None,
-        "auth_method": ctx.auth_method,
-    }, request_id=request.state.request_id)
+    return success(
+        {
+            "org_id": str(ctx.org_id),
+            "user_id": str(ctx.user_id) if ctx.user_id else None,
+            "agent_id": str(ctx.agent_id) if ctx.agent_id else None,
+            "auth_method": ctx.auth_method,
+        },
+        request_id=request.state.request_id,
+    )

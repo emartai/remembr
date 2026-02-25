@@ -72,9 +72,7 @@ class ScopeResolver:
         if scope.level == "user":
             scopes = [MemoryScope(org_id=scope.org_id, user_id=scope.user_id, level="user")]
             if scope.team_id:
-                scopes.append(
-                    MemoryScope(org_id=scope.org_id, team_id=scope.team_id, level="team")
-                )
+                scopes.append(MemoryScope(org_id=scope.org_id, team_id=scope.team_id, level="team"))
             scopes.append(MemoryScope(org_id=scope.org_id, level="org"))
             return scopes
 

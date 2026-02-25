@@ -42,4 +42,3 @@ class AuditLog(Base, UUIDMixin):
         server_default=func.now(),
         index=True,
     )
-

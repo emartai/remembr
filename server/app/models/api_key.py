@@ -76,4 +76,3 @@ class APIKey(Base, UUIDMixin):
 
     def __repr__(self) -> str:
         return f"<APIKey(id={self.id}, name={self.name}, org_id={self.org_id})>"
-

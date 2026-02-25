@@ -68,4 +68,3 @@ class Organization(Base, UUIDMixin, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<Organization(id={self.id}, name={self.name})>"
-

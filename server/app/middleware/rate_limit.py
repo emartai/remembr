@@ -13,6 +13,7 @@ try:
     from slowapi import Limiter
     from slowapi.errors import RateLimitExceeded
     from slowapi.middleware import SlowAPIMiddleware
+
     _SLOWAPI_AVAILABLE = True
 except Exception:  # pragma: no cover
     _SLOWAPI_AVAILABLE = False
@@ -95,20 +96,21 @@ def setup_rate_limiting(app) -> None:
 
     # Custom error handler that safely handles TimeoutError
     async def custom_rate_limit_handler(request: Request, exc: Exception):
-        detail = getattr(exc, 'detail', str(exc))
-        request_id = getattr(request.state, 'request_id', 'unknown')
+        detail = getattr(exc, "detail", str(exc))
+        request_id = getattr(request.state, "request_id", "unknown")
 
         from fastapi.responses import JSONResponse
+
         return JSONResponse(
             {
                 "error": {
                     "code": "RATE_LIMIT_EXCEEDED",
                     "message": f"Rate limit exceeded: {detail}",
                     "details": None,
-                    "request_id": request_id
+                    "request_id": request_id,
                 }
             },
-            status_code=429
+            status_code=429,
         )
 
     app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)

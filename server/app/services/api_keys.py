@@ -157,9 +157,7 @@ async def revoke_api_key(
     # Revoke by setting expires_at to now
     now = datetime.now(datetime.UTC)
     await db.execute(
-        update(APIKey)
-        .where(APIKey.id == key_id, APIKey.org_id == org_id)
-        .values(expires_at=now)
+        update(APIKey).where(APIKey.id == key_id, APIKey.org_id == org_id).values(expires_at=now)
     )
 
     # Invalidate cache
@@ -230,9 +228,7 @@ async def lookup_api_key(
         return None
 
     # Update last_used_at (fire and forget, don't wait)
-    await db.execute(
-        update(APIKey).where(APIKey.id == api_key.id).values(last_used_at=now)
-    )
+    await db.execute(update(APIKey).where(APIKey.id == api_key.id).values(last_used_at=now))
 
     # Prepare context
     context = {

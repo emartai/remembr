@@ -102,9 +102,7 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=(
-            settings.cors_origins
-            if settings.cors_origins
-            else (["*"] if settings.is_local else [])
+            settings.cors_origins if settings.cors_origins else (["*"] if settings.is_local else [])
         ),
         allow_credentials=True,
         allow_methods=["*"],
@@ -137,12 +135,14 @@ def create_app() -> FastAPI:
             ctx = get_current_context()
             if ctx:
                 # Update logger context with auth info
-                log_context.update({
-                    "org_id": str(ctx.org_id),
-                    "user_id": str(ctx.user_id) if ctx.user_id else None,
-                    "agent_id": str(ctx.agent_id) if ctx.agent_id else None,
-                    "auth_method": ctx.auth_method,
-                })
+                log_context.update(
+                    {
+                        "org_id": str(ctx.org_id),
+                        "user_id": str(ctx.user_id) if ctx.user_id else None,
+                        "agent_id": str(ctx.agent_id) if ctx.agent_id else None,
+                        "auth_method": ctx.auth_method,
+                    }
+                )
 
                 # Add to response headers
                 response.headers["X-Org-ID"] = str(ctx.org_id)

@@ -25,9 +25,7 @@ async def get_or_create_organization(
     Returns:
         Organization instance
     """
-    result = await db.execute(
-        select(Organization).where(Organization.name == name)
-    )
+    result = await db.execute(select(Organization).where(Organization.name == name))
     org = result.scalar_one_or_none()
 
     if org is None:

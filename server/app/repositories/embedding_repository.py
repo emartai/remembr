@@ -54,18 +54,12 @@ class EmbeddingRepository:
 
     async def get_by_id(self, embedding_id: uuid.UUID) -> Embedding | None:
         """Get embedding by ID."""
-        result = await self.db.execute(
-            select(Embedding).where(Embedding.id == embedding_id)
-        )
+        result = await self.db.execute(select(Embedding).where(Embedding.id == embedding_id))
         return result.scalar_one_or_none()
 
-    async def get_by_episode(
-        self, episode_id: uuid.UUID
-    ) -> list[Embedding]:
+    async def get_by_episode(self, episode_id: uuid.UUID) -> list[Embedding]:
         """Get all embeddings for an episode."""
-        result = await self.db.execute(
-            select(Embedding).where(Embedding.episode_id == episode_id)
-        )
+        result = await self.db.execute(select(Embedding).where(Embedding.episode_id == episode_id))
         return list(result.scalars().all())
 
     async def similarity_search(
