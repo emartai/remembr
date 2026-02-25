@@ -25,7 +25,8 @@ def test_404_error_format(client):
     assert "message" in data["error"]
     assert "request_id" in data["error"]
 
-    assert data["error"]["code"] == "HTTP_404"
+    # Error code format changed from HTTP_404 to NOT_FOUND
+    assert data["error"]["code"] == "NOT_FOUND"
 
 
 def test_404_includes_request_id(client):
@@ -58,4 +59,5 @@ def test_method_not_allowed_error(client):
     data = response.json()
 
     assert "error" in data
-    assert data["error"]["code"] == "HTTP_405"
+    # Error code format changed from HTTP_405 to METHOD_NOT_ALLOWED
+    assert data["error"]["code"] == "METHOD_NOT_ALLOWED"

@@ -199,8 +199,10 @@ class TestRegisterEndpoint:
             },
         )
 
-        assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "already registered" in response.json()["detail"].lower()
+        assert response.status_code == status.HTTP_409_CONFLICT
+        json_response = response.json()
+        assert "detail" in json_response
+        assert "already registered" in json_response["detail"].lower()
 
     async def test_register_invalid_email(self, client: AsyncClient):
         """Test registration with invalid email."""
@@ -258,7 +260,11 @@ class TestLoginEndpoint:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        data = response.json()
+        json_response = response.json()
+        
+        # Response is wrapped in StandardResponse format
+        assert "data" in json_response
+        data = json_response["data"]
 
         assert "access_token" in data
         assert "refresh_token" in data
@@ -288,7 +294,9 @@ class TestLoginEndpoint:
         )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-        assert "incorrect" in response.json()["detail"].lower()
+        json_response = response.json()
+        assert "detail" in json_response
+        assert "incorrect" in json_response["detail"].lower()
 
     async def test_login_nonexistent_user(self, client: AsyncClient):
         """Test login with non-existent user."""
@@ -331,7 +339,9 @@ class TestLoginEndpoint:
         )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-        assert "inactive" in response.json()["detail"].lower()
+        json_response = response.json()
+        assert "detail" in json_response
+        assert "inactive" in json_response["detail"].lower()
 
 
 @pytest.mark.asyncio
@@ -350,7 +360,7 @@ class TestRefreshEndpoint:
             },
         )
 
-        refresh_token = response.json()["refresh_token"]
+        refresh_token = response.json()["data"]["refresh_token"]
 
         # Refresh token
         response = await client.post(
@@ -359,7 +369,10 @@ class TestRefreshEndpoint:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        data = response.json()
+        json_response = response.json()
+        
+        assert "data" in json_response
+        data = json_response["data"]
 
         assert "access_token" in data
         assert data["token_type"] == "bearer"
@@ -377,7 +390,7 @@ class TestRefreshEndpoint:
             },
         )
 
-        access_token = response.json()["access_token"]
+        access_token = response.json()["data"]["access_token"]
 
         # Try to refresh with access token
         response = await client.post(
@@ -408,7 +421,7 @@ class TestRefreshEndpoint:
             },
         )
 
-        refresh_token = response.json()["refresh_token"]
+        refresh_token = response.json()["data"]["refresh_token"]
 
         # Logout (invalidate token)
         await client.post(
@@ -423,7 +436,9 @@ class TestRefreshEndpoint:
         )
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
-        assert "invalidated" in response.json()["detail"].lower()
+        json_response = response.json()
+        assert "detail" in json_response
+        assert "invalidated" in json_response["detail"].lower()
 
 
 @pytest.mark.asyncio
@@ -442,7 +457,7 @@ class TestLogoutEndpoint:
             },
         )
 
-        refresh_token = response.json()["refresh_token"]
+        refresh_token = response.json()["data"]["refresh_token"]
 
         # Logout
         response = await client.post(
@@ -464,7 +479,7 @@ class TestLogoutEndpoint:
             },
         )
 
-        access_token = response.json()["access_token"]
+        access_token = response.json()["data"]["access_token"]
 
         # Try to logout with access token
         response = await client.post(
@@ -492,7 +507,7 @@ class TestMeEndpoint:
             },
         )
 
-        access_token = response.json()["access_token"]
+        access_token = response.json()["data"]["access_token"]
 
         # Get current user
         response = await client.get(
@@ -501,7 +516,10 @@ class TestMeEndpoint:
         )
 
         assert response.status_code == status.HTTP_200_OK
-        data = response.json()
+        json_response = response.json()
+        
+        assert "data" in json_response
+        data = json_response["data"]
 
         assert data["email"] == email
         assert "id" in data
@@ -514,7 +532,7 @@ class TestMeEndpoint:
         """Test getting current user without token."""
         response = await client.get("/api/v1/auth/me")
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     async def test_get_me_invalid_token(self, client: AsyncClient):
         """Test getting current user with invalid token."""
@@ -537,7 +555,7 @@ class TestMeEndpoint:
             },
         )
 
-        refresh_token = response.json()["refresh_token"]
+        refresh_token = response.json()["data"]["refresh_token"]
 
         # Try to access with refresh token
         response = await client.get(

@@ -8,8 +8,9 @@ from app.config import Settings
 
 def test_settings_validation():
     """Test that Settings validates required fields."""
+    # Create Settings with env_file=None to prevent loading from .env
     with pytest.raises(ValidationError) as exc_info:
-        Settings()
+        Settings(_env_file=None)
 
     errors = exc_info.value.errors()
     required_fields = {error["loc"][0] for error in errors}
