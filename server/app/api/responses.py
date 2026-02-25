@@ -32,7 +32,7 @@ def success(data: T, request_id: str) -> StandardResponse[T]:
     return StandardResponse(
         data=data,
         request_id=request_id,
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(datetime.UTC).isoformat(),
     )
 
 

@@ -58,7 +58,11 @@ class APIKeyListResponse(BaseModel):
     total: int
 
 
-@router.post("", response_model=StandardResponse[CreateAPIKeyResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "",
+    response_model=StandardResponse[CreateAPIKeyResponse],
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_new_api_key(
     payload: CreateAPIKeyRequest,
     request: Request,
@@ -120,7 +124,10 @@ async def list_api_keys(
         )
         for key in api_keys
     ]
-    return success(APIKeyListResponse(keys=keys, total=len(keys)), request_id=request.state.request_id)
+    return success(
+        APIKeyListResponse(keys=keys, total=len(keys)),
+        request_id=request.state.request_id,
+    )
 
 
 @router.delete("/{key_id}", response_model=StandardResponse[dict[str, str]])

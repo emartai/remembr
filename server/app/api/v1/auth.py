@@ -170,10 +170,12 @@ async def logout(
 
     exp_timestamp = data.get("exp")
     if exp_timestamp:
-        exp_datetime = datetime.fromtimestamp(exp_timestamp, tz=timezone.utc)
-        ttl_seconds = int((exp_datetime - datetime.now(timezone.utc)).total_seconds())
+        exp_datetime = datetime.fromtimestamp(exp_timestamp, tz=datetime.UTC)
+        ttl_seconds = int((exp_datetime - datetime.now(datetime.UTC)).total_seconds())
         if ttl_seconds > 0:
-            await redis.setex(f"invalidated_token:{payload.refresh_token}", ttl_seconds, "1")
+            await redis.setex(
+                f"invalidated_token:{payload.refresh_token}", ttl_seconds, "1"
+            )
 
     return success({"message": "Logged out"}, request_id=request.state.request_id)
 
