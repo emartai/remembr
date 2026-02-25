@@ -1,12 +1,13 @@
+from __future__ import annotations
+
 """Embedding model for vector storage."""
 
 import uuid
-from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func
+from pgvector.sqlalchemy import Vector
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from pgvector.sqlalchemy import Vector
 
 from app.db.base import Base, TimestampMixin, UUIDMixin
 
@@ -14,7 +15,7 @@ from app.db.base import Base, TimestampMixin, UUIDMixin
 class Embedding(Base, UUIDMixin, TimestampMixin):
     """
     Embedding model for storing vector representations.
-    
+
     Uses pgvector extension for efficient similarity search.
     """
 
@@ -71,3 +72,4 @@ class Embedding(Base, UUIDMixin, TimestampMixin):
             f"dimensions={self.dimensions}, "
             f"org_id={self.org_id})>"
         )
+

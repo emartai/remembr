@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """API Key model."""
 
 import uuid
@@ -13,7 +15,7 @@ from app.db.base import Base, UUIDMixin
 class APIKey(Base, UUIDMixin):
     """
     API Key model for authentication.
-    
+
     Keys can be scoped to users or agents.
     """
 
@@ -74,3 +76,4 @@ class APIKey(Base, UUIDMixin):
 
     def __repr__(self) -> str:
         return f"<APIKey(id={self.id}, name={self.name}, org_id={self.org_id})>"
+

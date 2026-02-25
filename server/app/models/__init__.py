@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Database models."""
 
 from app.models.agent import Agent
@@ -23,3 +25,4 @@ __all__ = [
     "Team",
     "User",
 ]
+

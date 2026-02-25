@@ -31,7 +31,7 @@ async def protected_endpoint(
         user_id=str(ctx.user_id) if ctx.user_id else None,
         auth_method=ctx.auth_method,
     )
-    
+
     return {
         "message": "Access granted",
         "org_id": str(ctx.org_id),
@@ -52,7 +52,7 @@ async def optional_auth_endpoint(
     without requiring it.
     """
     ctx = get_current_context()
-    
+
     if ctx:
         logger.info(
             "Optional auth endpoint accessed with auth",
@@ -83,7 +83,7 @@ async def context_anywhere_endpoint(
     """
     # Call a helper function that accesses context
     result = _helper_function()
-    
+
     return {
         "message": "Context accessible everywhere",
         "from_dependency": str(ctx.org_id),
@@ -99,7 +99,7 @@ def _helper_function() -> dict:
     via contextvars, not just in the endpoint function.
     """
     ctx = get_current_context()
-    
+
     if ctx:
         logger.info(
             "Helper function accessed context",
@@ -109,7 +109,7 @@ def _helper_function() -> dict:
             "org_id": str(ctx.org_id),
             "auth_method": ctx.auth_method,
         }
-    
+
     return {"error": "No context available"}
 
 
@@ -122,19 +122,19 @@ async def example_service_function(db: AsyncSession):
     passed as a parameter.
     """
     ctx = get_current_context()
-    
+
     if not ctx:
         raise ValueError("No authentication context available")
-    
+
     logger.info(
         "Service function executing",
         org_id=str(ctx.org_id),
         user_id=str(ctx.user_id) if ctx.user_id else None,
     )
-    
+
     # The db session already has org context set via RLS
     # All queries are automatically scoped to ctx.org_id
-    
+
     # Your business logic here
     return {
         "org_id": str(ctx.org_id),

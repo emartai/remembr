@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Organization model."""
 
 from sqlalchemy import String
@@ -9,7 +11,7 @@ from app.db.base import Base, TimestampMixin, UUIDMixin
 class Organization(Base, UUIDMixin, TimestampMixin):
     """
     Organization model for multi-tenancy.
-    
+
     All data is scoped to an organization.
     """
 
@@ -66,3 +68,4 @@ class Organization(Base, UUIDMixin, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<Organization(id={self.id}, name={self.name})>"
+

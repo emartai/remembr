@@ -1,13 +1,11 @@
 import sys
 import uuid
 from contextlib import asynccontextmanager
-from typing import Any
 
 import sentry_sdk
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -30,10 +28,10 @@ from app.middleware.rate_limit import setup_rate_limiting
 def configure_logging() -> None:
     """Configure structured JSON logging with loguru."""
     settings = get_settings()
-    
+
     # Remove default handler
     logger.remove()
-    
+
     # Add JSON structured logging
     logger.add(
         sys.stdout,
@@ -45,7 +43,7 @@ def configure_logging() -> None:
 def configure_sentry() -> None:
     """Initialize Sentry if DSN is configured."""
     settings = get_settings()
-    
+
     if settings.sentry_dsn:
         sentry_sdk.init(
             dsn=settings.sentry_dsn.get_secret_value(),
@@ -61,10 +59,10 @@ async def lifespan(app: FastAPI):
     # Startup
     configure_logging()
     configure_sentry()
-    
+
     # Initialize Redis
     from app.db.redis import init_redis
-    
+
     try:
         await init_redis()
         logger.info("Application startup", version="0.1.0", redis="connected")
@@ -72,12 +70,12 @@ async def lifespan(app: FastAPI):
         logger.error("Failed to initialize Redis", error=str(e))
         # Continue without Redis - endpoints will handle gracefully
         logger.warning("Application starting without Redis")
-    
+
     yield
-    
+
     # Shutdown
     from app.db.redis import close_redis
-    
+
     await close_redis()
     logger.info("Application shutdown")
 
@@ -90,7 +88,7 @@ def create_app() -> FastAPI:
         Configured FastAPI application
     """
     settings = get_settings()
-    
+
     app = FastAPI(
         title="Remembr API",
         description="Persistent memory infrastructure for AI agents",
@@ -99,7 +97,7 @@ def create_app() -> FastAPI:
         docs_url="/docs" if not settings.is_production else None,
         redoc_url="/redoc" if not settings.is_production else None,
     )
-    
+
     # CORS middleware
     app.add_middleware(
         CORSMiddleware,
@@ -108,29 +106,29 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
+
     # Request context middleware
     @app.middleware("http")
     async def add_request_context(request: Request, call_next):
         request_id = str(uuid.uuid4())
         request.state.request_id = request_id
-        
+
         # Import here to avoid circular dependency
         from app.middleware.context import get_current_context
-        
+
         # Start with request_id in logger context
         log_context = {"request_id": request_id}
-        
+
         with logger.contextualize(**log_context):
             logger.info(
                 "Request started",
                 method=request.method,
                 path=request.url.path,
             )
-            
+
             # Process request
             response = await call_next(request)
-            
+
             # After request processing, check if we have auth context
             ctx = get_current_context()
             if ctx:
@@ -141,12 +139,12 @@ def create_app() -> FastAPI:
                     "agent_id": str(ctx.agent_id) if ctx.agent_id else None,
                     "auth_method": ctx.auth_method,
                 })
-                
+
                 # Add to response headers
                 response.headers["X-Org-ID"] = str(ctx.org_id)
-            
+
             response.headers["X-Request-ID"] = request_id
-            
+
             # Log completion with full context
             with logger.contextualize(**log_context):
                 logger.info(
@@ -155,9 +153,9 @@ def create_app() -> FastAPI:
                     path=request.url.path,
                     status_code=response.status_code,
                 )
-            
+
             return response
-    
+
     # Global exception handlers
     @app.exception_handler(RemembrException)
     async def remembr_exception_handler(request: Request, exc: RemembrException):
@@ -251,7 +249,7 @@ def create_app() -> FastAPI:
 
     # Mount versioned API router
     app.include_router(v1_router, prefix=settings.api_v1_prefix)
-    
+
     return app
 
 

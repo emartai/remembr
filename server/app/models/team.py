@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Team model."""
 
 import uuid
@@ -58,3 +60,4 @@ class Team(Base, UUIDMixin):
 
     def __repr__(self) -> str:
         return f"<Team(id={self.id}, name={self.name}, org_id={self.org_id})>"
+

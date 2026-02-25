@@ -43,3 +43,11 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
 ignore = []
+
+[tool.ruff.lint.per-file-ignores]
+# SQLAlchemy models use string type hints for relationships to avoid circular imports
+# F821: Undefined names in forward references (intentional for SQLAlchemy)
+# UP037: Keep quotes in type annotations (required for SQLAlchemy relationships)
+# E402: Module level imports after `from __future__ import annotations` (acceptable pattern)
+"app/models/*.py" = ["F821", "UP037", "E402"]
+"app/repositories/embedding_repo.py" = ["F401"]  # Episode import used for type checking

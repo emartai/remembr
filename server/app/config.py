@@ -168,12 +168,12 @@ def get_test_settings() -> Settings:
     Uses a separate test database to avoid polluting production data.
     """
     settings = get_settings()
-    
+
     # Override database URL for testing
     test_db_url = settings.database_url.get_secret_value().replace(
         "/remembr", "/remembr_test"
     )
-    
+
     return Settings(
         database_url=SecretStr(test_db_url),
         redis_url=settings.redis_url,

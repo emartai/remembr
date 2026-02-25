@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Memory Fact model."""
 
 import uuid
@@ -13,7 +15,7 @@ from app.db.base import Base, TimestampMixin, UUIDMixin
 class MemoryFact(Base, UUIDMixin, TimestampMixin):
     """
     Memory Fact model using subject-predicate-object triples.
-    
+
     Represents extracted knowledge from episodes with temporal validity.
     """
 
@@ -102,3 +104,4 @@ class MemoryFact(Base, UUIDMixin, TimestampMixin):
             f"predicate={self.predicate[:20]}, "
             f"org_id={self.org_id})>"
         )
+

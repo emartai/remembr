@@ -94,7 +94,7 @@ class EmbeddingRepository:
         # 1 - (vector <=> query) gives similarity score (0-1)
         query = text(
             f"""
-            SELECT 
+            SELECT
                 id,
                 org_id,
                 episode_id,

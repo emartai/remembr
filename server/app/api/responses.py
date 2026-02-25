@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Any, Generic, TypeVar
 
 from fastapi.responses import JSONResponse

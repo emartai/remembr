@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Episode model."""
 
 import uuid
@@ -13,7 +15,7 @@ from app.db.base import Base, UUIDMixin
 class Episode(Base, UUIDMixin):
     """
     Episode model representing individual messages or interactions.
-    
+
     Episodes are the atomic units of memory in the system.
     """
 
@@ -105,3 +107,4 @@ class Episode(Base, UUIDMixin):
 
     def __repr__(self) -> str:
         return f"<Episode(id={self.id}, role={self.role}, org_id={self.org_id})>"
+

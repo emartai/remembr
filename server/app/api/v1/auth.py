@@ -1,7 +1,7 @@
 """Authentication endpoints for user registration, login, and token management."""
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request, status

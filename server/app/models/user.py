@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """User model."""
 
 import uuid
@@ -75,3 +77,4 @@ class User(Base, UUIDMixin):
 
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email={self.email}, org_id={self.org_id})>"
+

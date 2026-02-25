@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 """Session model."""
 
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, func
+from sqlalchemy import DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,7 +15,7 @@ from app.db.base import Base, TimestampMixin, UUIDMixin
 class Session(Base, UUIDMixin, TimestampMixin):
     """
     Session model for grouping related episodes.
-    
+
     A session represents a conversation or interaction context.
     """
 
@@ -74,3 +76,4 @@ class Session(Base, UUIDMixin, TimestampMixin):
 
     def __repr__(self) -> str:
         return f"<Session(id={self.id}, org_id={self.org_id})>"
+

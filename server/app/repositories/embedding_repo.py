@@ -5,7 +5,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Embedding, Episode
+from app.models import Embedding
 
 
 class EmbeddingRepository:
@@ -21,14 +21,14 @@ class EmbeddingRepository:
     ) -> Embedding:
         """
         Store an embedding for an episode.
-        
+
         Args:
             session: Database session
             episode_id: Episode ID
             org_id: Organization ID
             embedding: 1024-dimensional embedding vector
             model_name: Name of the embedding model
-            
+
         Returns:
             Created Embedding instance
         """
@@ -66,14 +66,14 @@ class EmbeddingRepository:
     ) -> list[tuple[uuid.UUID, float]]:
         """
         Search for similar episodes using cosine similarity.
-        
+
         Args:
             session: Database session
             org_id: Organization ID for scoping
             query_embedding: Query embedding vector
             limit: Maximum number of results
             score_threshold: Minimum similarity score (0-1)
-            
+
         Returns:
             List of (episode_id, similarity_score) tuples, ordered by score desc
         """
@@ -110,11 +110,11 @@ class EmbeddingRepository:
     ) -> Embedding | None:
         """
         Get embedding for an episode.
-        
+
         Args:
             session: Database session
             episode_id: Episode ID
-            
+
         Returns:
             Embedding instance or None if not found
         """
@@ -130,11 +130,11 @@ class EmbeddingRepository:
     ) -> bool:
         """
         Delete embedding for an episode.
-        
+
         Args:
             session: Database session
             episode_id: Episode ID
-            
+
         Returns:
             True if deleted, False if not found
         """
@@ -157,11 +157,11 @@ class EmbeddingRepository:
     ) -> int:
         """
         Count embeddings for an organization.
-        
+
         Args:
             session: Database session
             org_id: Organization ID
-            
+
         Returns:
             Number of embeddings
         """

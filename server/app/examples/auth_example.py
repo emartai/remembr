@@ -117,13 +117,13 @@ async def org_data_endpoint(
     Both JWT and API key authentication provide org_id for scoping.
     """
     org_id = auth["org_id"]
-    
+
     # In a real endpoint, you would query data scoped to org_id
     # Example:
     # result = await db.execute(
     #     select(SomeModel).where(SomeModel.org_id == org_id)
     # )
-    
+
     return {
         "message": "Data scoped to organization",
         "org_id": str(org_id),

@@ -29,13 +29,13 @@ async def set_org_context(session: AsyncSession, org_id: uuid.UUID | str) -> Non
     """
     # Convert to string if UUID
     org_id_str = str(org_id)
-    
+
     # Set the configuration parameter for this session
     await session.execute(
         text("SET LOCAL app.current_org_id = :org_id"),
         {"org_id": org_id_str},
     )
-    
+
     logger.debug("Organization context set", org_id=org_id_str)
 
 

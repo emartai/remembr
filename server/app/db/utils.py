@@ -29,12 +29,12 @@ async def get_or_create_organization(
         select(Organization).where(Organization.name == name)
     )
     org = result.scalar_one_or_none()
-    
+
     if org is None:
         org = Organization(name=name)
         db.add(org)
         await db.flush()
-    
+
     return org
 
 
@@ -55,7 +55,7 @@ async def check_org_access(
         True if user has access, False otherwise
     """
     from app.models import User
-    
+
     result = await db.execute(
         select(User).where(
             User.id == user_id,

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Audit log model for compliance-critical operations."""
 
 import uuid
@@ -40,3 +42,4 @@ class AuditLog(Base, UUIDMixin):
         server_default=func.now(),
         index=True,
     )
+

@@ -12,7 +12,6 @@ from app.config import get_settings
 try:
     from slowapi import Limiter
     from slowapi.errors import RateLimitExceeded
-    from slowapi.extension import _rate_limit_exceeded_handler
     from slowapi.middleware import SlowAPIMiddleware
     _SLOWAPI_AVAILABLE = True
 except Exception:  # pragma: no cover
@@ -97,7 +96,7 @@ def setup_rate_limiting(app) -> None:
     async def custom_rate_limit_handler(request: Request, exc: Exception):
         detail = getattr(exc, 'detail', str(exc))
         request_id = getattr(request.state, 'request_id', 'unknown')
-        
+
         from fastapi.responses import JSONResponse
         return JSONResponse(
             {
@@ -110,6 +109,6 @@ def setup_rate_limiting(app) -> None:
             },
             status_code=429
         )
-    
+
     app.add_exception_handler(RateLimitExceeded, custom_rate_limit_handler)
     app.add_middleware(SlowAPIMiddleware)

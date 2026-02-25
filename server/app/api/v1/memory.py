@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from time import perf_counter
 from typing import Annotated, Any
 from uuid import UUID
@@ -16,10 +16,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.responses import StandardResponse, success
 from app.db.redis import get_redis
 from app.db.session import get_db
-from app.middleware.context import RequestContext, require_auth
-from app.models import Episode, Session
-from app.services.cache import CacheService
-from app.services.episodic import EpisodicMemory
 from app.error_codes import (
     CHECKPOINT_NOT_FOUND,
     EPISODE_NOT_FOUND,
@@ -28,10 +24,14 @@ from app.error_codes import (
     SESSION_NOT_FOUND,
 )
 from app.exceptions import AuthorizationError, NotFoundError, ValidationError
+from app.middleware.context import RequestContext, require_auth
+from app.middleware.rate_limit import get_search_limit, limiter
+from app.models import Episode, Session
+from app.services.cache import CacheService
+from app.services.episodic import EpisodicMemory
 from app.services.forgetting import ForgettingService
 from app.services.scoping import MemoryScope, ScopeResolver
 from app.services.short_term import SessionMessage, ShortTermMemory
-from app.middleware.rate_limit import limiter, get_search_limit
 
 router = APIRouter(tags=["memory"])
 
@@ -366,7 +366,7 @@ async def log_memory(
             content=payload.content,
             tokens=token_count,
             priority_score=0.0,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
         await short_term.add_message(str(payload.session_id), message)
 

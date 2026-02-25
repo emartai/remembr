@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """Agent model."""
 
 import uuid
@@ -75,3 +77,4 @@ class Agent(Base, UUIDMixin):
 
     def __repr__(self) -> str:
         return f"<Agent(id={self.id}, name={self.name}, org_id={self.org_id})>"
+
