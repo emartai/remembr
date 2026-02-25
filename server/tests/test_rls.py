@@ -5,12 +5,13 @@ import uuid
 import pytest
 from sqlalchemy import select, text
 
+import pytest_asyncio
 from app.db.rls import clear_org_context, get_org_context, set_org_context
 from app.db.session import AsyncSessionLocal
 from app.models import Embedding, Episode, MemoryFact, Organization, Session
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def test_orgs():
     """Create test organizations."""
     async with AsyncSessionLocal() as db:
@@ -67,7 +68,7 @@ async def test_clear_org_context():
 @pytest.mark.asyncio
 async def test_rls_sessions_isolation(test_orgs):
     """Test RLS prevents cross-org access to sessions."""
-    org_a, org_b = await test_orgs
+    org_a, org_b = test_orgs
 
     async with AsyncSessionLocal() as db:
         # Create session for org A
@@ -126,7 +127,7 @@ async def test_rls_sessions_isolation(test_orgs):
 @pytest.mark.asyncio
 async def test_rls_episodes_isolation(test_orgs):
     """Test RLS prevents cross-org access to episodes."""
-    org_a, org_b = await test_orgs
+    org_a, org_b = test_orgs
 
     async with AsyncSessionLocal() as db:
         # Create episode for org A
@@ -185,7 +186,7 @@ async def test_rls_episodes_isolation(test_orgs):
 @pytest.mark.asyncio
 async def test_rls_direct_sql_query(test_orgs):
     """Test that RLS works even with direct SQL queries."""
-    org_a, org_b = await test_orgs
+    org_a, org_b = test_orgs
 
     async with AsyncSessionLocal() as db:
         # Create episodes for both orgs
@@ -233,7 +234,7 @@ async def test_rls_direct_sql_query(test_orgs):
 @pytest.mark.asyncio
 async def test_rls_insert_wrong_org(test_orgs):
     """Test that RLS prevents inserting data for wrong org."""
-    org_a, org_b = await test_orgs
+    org_a, org_b = test_orgs
 
     async with AsyncSessionLocal() as db:
         # Set context to org A
@@ -257,7 +258,7 @@ async def test_rls_insert_wrong_org(test_orgs):
 @pytest.mark.asyncio
 async def test_rls_memory_facts_isolation(test_orgs):
     """Test RLS for memory_facts table."""
-    org_a, org_b = await test_orgs
+    org_a, org_b = test_orgs
 
     async with AsyncSessionLocal() as db:
         # Create memory fact for org A
@@ -306,7 +307,7 @@ async def test_rls_memory_facts_isolation(test_orgs):
 @pytest.mark.asyncio
 async def test_rls_embeddings_isolation(test_orgs):
     """Test RLS for embeddings table."""
-    org_a, org_b = await test_orgs
+    org_a, org_b = test_orgs
 
     async with AsyncSessionLocal() as db:
         # Create embedding for org A

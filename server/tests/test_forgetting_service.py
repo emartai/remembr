@@ -38,7 +38,9 @@ async def test_delete_episode_writes_success_audit(monkeypatch):
     episode_id = uuid4()
     scope = MemoryScope(org_id=str(uuid4()), user_id=str(uuid4()), level="user")
 
-    db.execute = AsyncMock(return_value=SimpleNamespace(scalar_one_or_none=lambda: SimpleNamespace(id=episode_id)))
+    db.execute = AsyncMock(
+        return_value=SimpleNamespace(scalar_one_or_none=lambda: SimpleNamespace(id=episode_id))
+    )
     db.delete = AsyncMock()
 
     svc = ForgettingService(db=db, redis=redis, session_factory=lambda: AsyncMock())

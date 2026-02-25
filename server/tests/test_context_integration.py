@@ -46,10 +46,12 @@ class TestContextIntegration:
     async def test_me_endpoint_with_jwt(self, client: AsyncClient, test_user):
         """Test /me endpoint with JWT authentication."""
         # Create JWT token
-        token = create_access_token({
-            "sub": str(test_user.id),
-            "email": test_user.email,
-        })
+        token = create_access_token(
+            {
+                "sub": str(test_user.id),
+                "email": test_user.email,
+            }
+        )
 
         # Call /me endpoint
         response = await client.get(
@@ -71,11 +73,13 @@ class TestContextIntegration:
         agent_id = uuid.uuid4()
 
         # Create JWT token with agent_id
-        token = create_access_token({
-            "sub": str(test_user.id),
-            "email": test_user.email,
-            "agent_id": str(agent_id),
-        })
+        token = create_access_token(
+            {
+                "sub": str(test_user.id),
+                "email": test_user.email,
+                "agent_id": str(agent_id),
+            }
+        )
 
         response = await client.get(
             "/v1/me",
@@ -157,10 +161,12 @@ class TestContextIntegration:
 
     async def test_response_headers(self, client: AsyncClient, test_user):
         """Test that response includes context headers."""
-        token = create_access_token({
-            "sub": str(test_user.id),
-            "email": test_user.email,
-        })
+        token = create_access_token(
+            {
+                "sub": str(test_user.id),
+                "email": test_user.email,
+            }
+        )
 
         response = await client.get(
             "/v1/me",

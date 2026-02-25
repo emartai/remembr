@@ -132,10 +132,12 @@ class TestJWTAuth:
     async def test_jwt_auth_success(self, db, test_user):
         """Test successful JWT authentication."""
         # Create access token
-        token = create_access_token({
-            "sub": str(test_user.id),
-            "email": test_user.email,
-        })
+        token = create_access_token(
+            {
+                "sub": str(test_user.id),
+                "email": test_user.email,
+            }
+        )
 
         # Mock dependencies
         from fastapi.security import HTTPAuthorizationCredentials
@@ -170,11 +172,13 @@ class TestJWTAuth:
         agent_id = uuid.uuid4()
 
         # Create access token with agent_id
-        token = create_access_token({
-            "sub": str(test_user.id),
-            "email": test_user.email,
-            "agent_id": str(agent_id),
-        })
+        token = create_access_token(
+            {
+                "sub": str(test_user.id),
+                "email": test_user.email,
+                "agent_id": str(agent_id),
+            }
+        )
 
         from fastapi.security import HTTPAuthorizationCredentials
 
@@ -202,10 +206,12 @@ class TestJWTAuth:
         await db.commit()
 
         # Create token
-        token = create_access_token({
-            "sub": str(test_user.id),
-            "email": test_user.email,
-        })
+        token = create_access_token(
+            {
+                "sub": str(test_user.id),
+                "email": test_user.email,
+            }
+        )
 
         from fastapi.security import HTTPAuthorizationCredentials
 
@@ -251,10 +257,12 @@ class TestJWTAuth:
         """Test JWT authentication with non-existent user."""
         # Create token for non-existent user
         fake_user_id = uuid.uuid4()
-        token = create_access_token({
-            "sub": str(fake_user_id),
-            "email": "fake@example.com",
-        })
+        token = create_access_token(
+            {
+                "sub": str(fake_user_id),
+                "email": "fake@example.com",
+            }
+        )
 
         from fastapi.security import HTTPAuthorizationCredentials
 
@@ -478,10 +486,12 @@ class TestIntegration:
             }
 
         # Create token
-        token = create_access_token({
-            "sub": str(test_user.id),
-            "email": test_user.email,
-        })
+        token = create_access_token(
+            {
+                "sub": str(test_user.id),
+                "email": test_user.email,
+            }
+        )
 
         # Test with client
         client = TestClient(app)

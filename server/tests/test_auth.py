@@ -158,9 +158,7 @@ class TestRegisterEndpoint:
         assert data["token_type"] == "bearer"
 
         # Verify user was created in database
-        result = await db.execute(
-            select(User).where(User.email == "newuser@example.com")
-        )
+        result = await db.execute(select(User).where(User.email == "newuser@example.com"))
         user = result.scalar_one_or_none()
 
         assert user is not None
@@ -169,9 +167,7 @@ class TestRegisterEndpoint:
         assert user.hashed_password != "secure_password_123"
 
         # Verify organization was created
-        result = await db.execute(
-            select(Organization).where(Organization.id == user.org_id)
-        )
+        result = await db.execute(select(Organization).where(Organization.id == user.org_id))
         org = result.scalar_one_or_none()
 
         assert org is not None

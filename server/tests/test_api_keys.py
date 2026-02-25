@@ -104,9 +104,7 @@ class TestCreateAPIKeyEndpoint:
         assert "created_at" in data
 
         # Verify key was stored in database
-        result = await db.execute(
-            select(APIKey).where(APIKey.id == data["id"])
-        )
+        result = await db.execute(select(APIKey).where(APIKey.id == data["id"]))
         api_key = result.scalar_one_or_none()
 
         assert api_key is not None
@@ -345,9 +343,7 @@ class TestRevokeAPIKeyEndpoint:
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
         # Verify key is expired in database
-        result = await db.execute(
-            select(APIKey).where(APIKey.id == key_id)
-        )
+        result = await db.execute(select(APIKey).where(APIKey.id == key_id))
         api_key = result.scalar_one_or_none()
 
         assert api_key is not None

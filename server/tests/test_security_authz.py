@@ -43,7 +43,7 @@ async def test_protected_routes_require_auth() -> None:
             if not path.startswith("/api/v1"):
                 continue
 
-            for method in (getattr(route, "methods", set()) or set()):
+            for method in getattr(route, "methods", set()) or set():
                 if method in {"HEAD", "OPTIONS"}:
                     continue
                 if (method, path) in PUBLIC_ROUTE_PREFIXES:
@@ -63,4 +63,6 @@ async def test_protected_routes_require_auth() -> None:
                 kwargs["json"] = {}
 
             response = await client.request(method, path, **kwargs)
-            assert response.status_code in {401, 403}, f"{method} {path} should require auth, got {response.status_code}"
+            assert response.status_code in {401, 403}, (
+                f"{method} {path} should require auth, got {response.status_code}"
+            )

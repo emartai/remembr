@@ -57,6 +57,10 @@ jobs:
           pip install -r server/requirements.txt
           pip install pytest pytest-cov pytest-asyncio httpx
 
+      - name: Install pgvector extension
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d remembr_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
       - name: Run ruff linting
         run: |
           pip install ruff

@@ -57,7 +57,9 @@ def test_to_sql_filter_generates_or_filter_for_readable_scopes() -> None:
     agent_col = Column("agent_id", postgresql.UUID(as_uuid=False))
 
     clause = ScopeResolver.to_sql_filter(readable, org_col, team_col, user_col, agent_col)
-    compiled = str(clause.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}))
+    compiled = str(
+        clause.compile(dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True})
+    )
 
     assert " OR " in compiled
     assert "agent_id" in compiled

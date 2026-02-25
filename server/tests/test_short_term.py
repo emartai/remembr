@@ -183,7 +183,9 @@ async def test_checkpoint_modify_restore_cycle() -> None:
             json.dumps(value),
         )
     )
-    cache.get = AsyncMock(side_effect=lambda key: json.loads(redis_store[key]) if key in redis_store else None)
+    cache.get = AsyncMock(
+        side_effect=lambda key: json.loads(redis_store[key]) if key in redis_store else None
+    )
 
     db = _FakeDB(scoped_session=scoped_session)
     memory = ShortTermMemory(cache=cache, db=db, max_tokens=100)

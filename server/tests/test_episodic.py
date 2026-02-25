@@ -234,7 +234,9 @@ async def test_search_hybrid_combines_semantic_with_filters(scope: MemoryScope):
 
 
 @pytest.mark.asyncio
-async def test_reconstruct_state_at_returns_snapshot(scope: MemoryScope, monkeypatch: pytest.MonkeyPatch):
+async def test_reconstruct_state_at_returns_snapshot(
+    scope: MemoryScope, monkeypatch: pytest.MonkeyPatch
+):
     older = SimpleNamespace(created_at=datetime(2026, 1, 1, 9, tzinfo=UTC), id=uuid.uuid4())
     newer = SimpleNamespace(created_at=datetime(2026, 1, 1, 15, tzinfo=UTC), id=uuid.uuid4())
 

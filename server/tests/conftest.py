@@ -25,9 +25,7 @@ def _get_test_session_factory() -> async_sessionmaker[AsyncSession]:
 
     settings = get_test_settings()
     _test_engine = create_async_engine(
-        settings.database_url.get_secret_value().replace(
-            "postgresql://", "postgresql+asyncpg://"
-        ),
+        settings.database_url.get_secret_value().replace("postgresql://", "postgresql+asyncpg://"),
         echo=False,
         pool_pre_ping=True,
     )

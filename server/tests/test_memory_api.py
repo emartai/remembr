@@ -139,9 +139,17 @@ async def test_checkpoint_and_restore(monkeypatch, ctx):
     )
 
     db.execute.side_effect = [
-        _ScalarResult(SimpleNamespace(id=session_id, org_id=ctx.org_id, team_id=None, user_id=ctx.user_id, agent_id=None)),
+        _ScalarResult(
+            SimpleNamespace(
+                id=session_id, org_id=ctx.org_id, team_id=None, user_id=ctx.user_id, agent_id=None
+            )
+        ),
         _ScalarResult(checkpoint_episode),
-        _ScalarResult(SimpleNamespace(id=session_id, org_id=ctx.org_id, team_id=None, user_id=ctx.user_id, agent_id=None)),
+        _ScalarResult(
+            SimpleNamespace(
+                id=session_id, org_id=ctx.org_id, team_id=None, user_id=ctx.user_id, agent_id=None
+            )
+        ),
         _ScalarResult(checkpoint_episode),
     ]
 
@@ -180,7 +188,11 @@ async def test_cross_org_and_missing_checkpoint_return_404(monkeypatch, ctx):
     assert missing_session.value.status_code == 404
 
     db.execute.side_effect = [
-        _ScalarResult(SimpleNamespace(id=uuid4(), org_id=ctx.org_id, team_id=None, user_id=ctx.user_id, agent_id=None)),
+        _ScalarResult(
+            SimpleNamespace(
+                id=uuid4(), org_id=ctx.org_id, team_id=None, user_id=ctx.user_id, agent_id=None
+            )
+        ),
         _ScalarResult(None),
     ]
     monkeypatch.setattr("app.api.v1.memory.ShortTermMemory", lambda cache, db: Mock())
@@ -200,7 +212,11 @@ async def test_search_memory_enforces_limit_and_returns_results(monkeypatch, ctx
     db = AsyncMock()
 
     session_id = uuid4()
-    db.execute.return_value = _ScalarResult(SimpleNamespace(id=session_id, org_id=ctx.org_id, team_id=None, user_id=ctx.user_id, agent_id=None))
+    db.execute.return_value = _ScalarResult(
+        SimpleNamespace(
+            id=session_id, org_id=ctx.org_id, team_id=None, user_id=ctx.user_id, agent_id=None
+        )
+    )
 
     fake_engine = Mock()
     fake_engine.query = AsyncMock(
