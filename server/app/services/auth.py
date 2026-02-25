@@ -1,6 +1,6 @@
 """Authentication service for JWT token management and password hashing."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 import bcrypt
@@ -22,10 +22,10 @@ security = HTTPBearer()
 def hash_password(password: str) -> str:
     """
     Hash a password using bcrypt.
-    
+
     Args:
         password: Plain text password
-        
+
     Returns:
         Hashed password string
     """
@@ -37,11 +37,11 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     Verify a password against its hash.
-    
+
     Args:
         plain_password: Plain text password to verify
         hashed_password: Hashed password to compare against
-        
+
     Returns:
         True if password matches, False otherwise
     """
@@ -58,63 +58,63 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def create_access_token(data: dict) -> str:
     """
     Create a JWT access token.
-    
+
     Args:
         data: Dictionary of claims to encode in the token
-        
+
     Returns:
         Encoded JWT token string
     """
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(
+    expire = datetime.now(UTC) + timedelta(
         minutes=settings.access_token_expire_minutes
     )
     to_encode.update({"exp": expire, "type": "access"})
-    
+
     encoded_jwt = jwt.encode(
         to_encode,
         settings.secret_key.get_secret_value(),
         algorithm=settings.algorithm,
     )
-    
+
     return encoded_jwt
 
 
 def create_refresh_token(data: dict) -> str:
     """
     Create a JWT refresh token with longer expiry.
-    
+
     Args:
         data: Dictionary of claims to encode in the token
-        
+
     Returns:
         Encoded JWT refresh token string
     """
     to_encode = data.copy()
-    expire = datetime.now(timezone.utc) + timedelta(
+    expire = datetime.now(UTC) + timedelta(
         days=settings.refresh_token_expire_days
     )
     to_encode.update({"exp": expire, "type": "refresh"})
-    
+
     encoded_jwt = jwt.encode(
         to_encode,
         settings.secret_key.get_secret_value(),
         algorithm=settings.algorithm,
     )
-    
+
     return encoded_jwt
 
 
 def decode_token(token: str) -> dict:
     """
     Decode and validate a JWT token.
-    
+
     Args:
         token: JWT token string to decode
-        
+
     Returns:
         Dictionary of decoded claims
-        
+
     Raises:
         HTTPException: If token is invalid or expired
     """
@@ -147,25 +147,25 @@ async def get_current_user(
 ) -> User:
     """
     FastAPI dependency to get the current authenticated user.
-    
+
     Extracts the Bearer token from the Authorization header,
     decodes it, and fetches the user from the database.
-    
+
     Args:
         credentials: HTTP Bearer credentials from request header
         db: Database session
-        
+
     Returns:
         User model instance
-        
+
     Raises:
         HTTPException: If token is invalid or user not found
     """
     token = credentials.credentials
-    
+
     # Decode token
     payload = decode_token(token)
-    
+
     # Verify token type
     token_type = payload.get("type")
     if token_type != "access":
@@ -174,7 +174,7 @@ async def get_current_user(
             detail="Invalid token type",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Extract user ID
     user_id: str | None = payload.get("sub")
     if user_id is None:
@@ -183,23 +183,23 @@ async def get_current_user(
             detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     # Fetch user from database
     result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalar_one_or_none()
-    
+
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     if not user.is_active:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Inactive user",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     return user
