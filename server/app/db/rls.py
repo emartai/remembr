@@ -10,17 +10,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 async def set_org_context(session: AsyncSession, org_id: uuid.UUID | str) -> None:
     """
     Set the organization context for the current database session.
-    
+
     This sets the app.current_org_id configuration parameter which is used
     by Row-Level Security policies to enforce multi-tenancy at the database level.
-    
+
     IMPORTANT: This must be called at the start of every transaction before
     any queries are executed.
-    
+
     Args:
         session: Database session
         org_id: Organization UUID
-        
+
     Example:
         >>> async with AsyncSessionLocal() as session:
         ...     await set_org_context(session, org_id)
@@ -42,10 +42,10 @@ async def set_org_context(session: AsyncSession, org_id: uuid.UUID | str) -> Non
 async def get_org_context(session: AsyncSession) -> str | None:
     """
     Get the current organization context.
-    
+
     Args:
         session: Database session
-        
+
     Returns:
         Organization ID string or None if not set
     """
@@ -59,7 +59,7 @@ async def get_org_context(session: AsyncSession) -> str | None:
 async def clear_org_context(session: AsyncSession) -> None:
     """
     Clear the organization context.
-    
+
     Args:
         session: Database session
     """

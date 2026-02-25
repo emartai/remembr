@@ -21,7 +21,7 @@ router.include_router(memory.router)
 async def health_check(request: Request):
     """
     Health check endpoint.
-    
+
     Returns:
         Health status with environment, version, and Redis status
     """
@@ -68,12 +68,12 @@ async def get_current_context_info(
 ):
     """
     Get current authentication context.
-    
+
     Demonstrates the context middleware by returning the authenticated
     user's context information.
-    
+
     Requires authentication via JWT or API key.
-    
+
     Returns:
         Context information including org_id, user_id, agent_id, auth_method
     """

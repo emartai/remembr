@@ -227,7 +227,9 @@ def _apply_episode_scope_filters(query, scope: MemoryScope):
     )
 
 
-async def _require_session_in_scope(db: AsyncSession, session_id: UUID, scope: MemoryScope) -> Session:
+async def _require_session_in_scope(
+    db: AsyncSession, session_id: UUID, scope: MemoryScope
+) -> Session:
     query = _apply_session_scope_filters(select(Session).where(Session.id == session_id), scope)
     result = await db.execute(query)
     session = result.scalar_one_or_none()
@@ -242,7 +244,9 @@ class MemoryQueryEngine:
     def __init__(self, episodic: EpisodicMemory):
         self.episodic = episodic
 
-    async def query(self, scope: MemoryScope, request: MemoryQueryRequest) -> tuple[list[MemorySearchResult], int, int]:
+    async def query(
+        self, scope: MemoryScope, request: MemoryQueryRequest
+    ) -> tuple[list[MemorySearchResult], int, int]:
         start = perf_counter()
         results: list[MemorySearchResult] = []
 
@@ -287,7 +291,10 @@ class MemoryQueryEngine:
             if request.role:
                 filtered = [ep for ep in filtered if ep.role == request.role]
             if request.tags:
-                filtered = [ep for ep in filtered if set(request.tags).intersection(set(ep.tags or []))]
+                filtered = [
+                    ep for ep in filtered
+                    if set(request.tags).intersection(set(ep.tags or []))
+                ]
 
             for ep in filtered[request.offset : request.offset + request.limit]:
                 results.append(
@@ -305,7 +312,11 @@ class MemoryQueryEngine:
         return results, len(results), elapsed_ms
 
 
-@router.post("/sessions", response_model=StandardResponse[CreateSessionResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/sessions",
+    response_model=StandardResponse[CreateSessionResponse],
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_session(
     payload: CreateSessionRequest,
     ctx: Annotated[RequestContext, Depends(require_auth)],
@@ -334,7 +345,11 @@ async def create_session(
     ), request_id=ctx.request_id)
 
 
-@router.post("/memory", response_model=StandardResponse[LogMemoryResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/memory",
+    response_model=StandardResponse[LogMemoryResponse],
+    status_code=status.HTTP_201_CREATED,
+)
 async def log_memory(
     payload: LogMemoryRequest,
     ctx: Annotated[RequestContext, Depends(require_auth)],
@@ -413,7 +428,10 @@ async def create_session_checkpoint(
     ), request_id=ctx.request_id)
 
 
-@router.post("/sessions/{session_id}/restore", response_model=StandardResponse[RestoreSessionResponse])
+@router.post(
+    "/sessions/{session_id}/restore",
+    response_model=StandardResponse[RestoreSessionResponse],
+)
 async def restore_session_checkpoint(
     session_id: UUID,
     payload: RestoreSessionRequest,
@@ -567,7 +585,10 @@ async def get_session(
     ), request_id=ctx.request_id)
 
 
-@router.get("/sessions/{session_id}/history", response_model=StandardResponse[SessionHistoryResponse])
+@router.get(
+    "/sessions/{session_id}/history",
+    response_model=StandardResponse[SessionHistoryResponse],
+)
 async def get_session_history(
     session_id: UUID,
     ctx: Annotated[RequestContext, Depends(require_auth)],
@@ -628,7 +649,10 @@ async def get_session_history(
     ), request_id=ctx.request_id)
 
 
-@router.get("/sessions/{session_id}/checkpoints", response_model=StandardResponse[CheckpointListResponse])
+@router.get(
+    "/sessions/{session_id}/checkpoints",
+    response_model=StandardResponse[CheckpointListResponse],
+)
 async def list_session_checkpoints(
     session_id: UUID,
     ctx: Annotated[RequestContext, Depends(require_auth)],
@@ -672,7 +696,10 @@ async def delete_memory_episode(
     ), request_id=ctx.request_id)
 
 
-@router.delete("/memory/session/{session_id}", response_model=StandardResponse[DeleteSessionMemoriesResponse])
+@router.delete(
+    "/memory/session/{session_id}",
+    response_model=StandardResponse[DeleteSessionMemoriesResponse],
+)
 async def delete_session_memories(
     session_id: UUID,
     ctx: Annotated[RequestContext, Depends(require_auth)],
@@ -697,7 +724,10 @@ async def delete_session_memories(
     ), request_id=ctx.request_id)
 
 
-@router.delete("/memory/user/{user_id}", response_model=StandardResponse[DeleteUserMemoriesResponse])
+@router.delete(
+    "/memory/user/{user_id}",
+    response_model=StandardResponse[DeleteUserMemoriesResponse],
+)
 async def delete_user_memories(
     user_id: UUID,
     ctx: Annotated[RequestContext, Depends(require_auth)],
@@ -705,7 +735,10 @@ async def delete_user_memories(
     redis: Annotated[Redis, Depends(get_redis)],
 ) -> StandardResponse[DeleteUserMemoriesResponse]:
     if ctx.user_id is not None or ctx.agent_id is not None:
-        raise AuthorizationError("Org-level authority required", details={"code": ORG_LEVEL_REQUIRED})
+        raise AuthorizationError(
+            "Org-level authority required",
+            details={"code": ORG_LEVEL_REQUIRED},
+        )
 
     service = ForgettingService(db=db, redis=redis)
     result = await service.delete_user_memories(

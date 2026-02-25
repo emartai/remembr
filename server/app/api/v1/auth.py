@@ -74,7 +74,11 @@ class UserResponse(BaseModel):
     created_at: datetime
 
 
-@router.post("/register", response_model=StandardResponse[TokenResponse], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=StandardResponse[TokenResponse],
+    status_code=status.HTTP_201_CREATED,
+)
 async def register(
     payload: RegisterRequest,
     request: Request,
@@ -120,7 +124,10 @@ async def login(
     user = result.scalar_one_or_none()
 
     if not user or not verify_password(payload.password, user.hashed_password):
-        raise AuthenticationError("Incorrect email or password", details={"code": INVALID_CREDENTIALS})
+        raise AuthenticationError(
+            "Incorrect email or password",
+            details={"code": INVALID_CREDENTIALS},
+        )
     if not user.is_active:
         raise AuthenticationError("Inactive user", details={"code": INACTIVE_USER})
 

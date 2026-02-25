@@ -17,11 +17,11 @@ async def get_or_create_organization(
 ) -> Organization:
     """
     Get or create an organization by name.
-    
+
     Args:
         db: Database session
         name: Organization name
-        
+
     Returns:
         Organization instance
     """
@@ -45,12 +45,12 @@ async def check_org_access(
 ) -> bool:
     """
     Check if a user has access to an organization.
-    
+
     Args:
         db: Database session
         org_id: Organization ID
         user_id: User ID
-        
+
     Returns:
         True if user has access, False otherwise
     """
@@ -60,7 +60,7 @@ async def check_org_access(
         select(User).where(
             User.id == user_id,
             User.org_id == org_id,
-            User.is_active == True,
+            User.is_active,
         )
     )
     user = result.scalar_one_or_none()

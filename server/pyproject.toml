@@ -42,7 +42,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
-ignore = []
+ignore = ["N818"]  # Allow exception names without Error suffix
 
 [tool.ruff.lint.per-file-ignores]
 # SQLAlchemy models use string type hints for relationships to avoid circular imports
@@ -51,3 +51,7 @@ ignore = []
 # E402: Module level imports after `from __future__ import annotations` (acceptable pattern)
 "app/models/*.py" = ["F821", "UP037", "E402"]
 "app/repositories/embedding_repo.py" = ["F401"]  # Episode import used for type checking
+# Alembic migrations are auto-generated and may have long lines
+"alembic/versions/*.py" = ["E501"]
+# Test files may have long lines for readability
+"tests/*.py" = ["E501"]

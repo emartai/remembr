@@ -37,9 +37,9 @@ def main():
         default=1,
         help="Number of worker processes (default: 1)",
     )
-    
+
     args = parser.parse_args()
-    
+
     uvicorn.run(
         "app.main:app",
         host=args.host,

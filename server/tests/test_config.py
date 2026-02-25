@@ -3,17 +3,17 @@
 import pytest
 from pydantic import SecretStr, ValidationError
 
-from app.config import Settings, get_settings
+from app.config import Settings
 
 
 def test_settings_validation():
     """Test that Settings validates required fields."""
     with pytest.raises(ValidationError) as exc_info:
         Settings()
-    
+
     errors = exc_info.value.errors()
     required_fields = {error["loc"][0] for error in errors}
-    
+
     assert "database_url" in required_fields
     assert "redis_url" in required_fields
     assert "secret_key" in required_fields
@@ -28,7 +28,7 @@ def test_settings_with_valid_data():
         secret_key=SecretStr("test-secret-key"),
         jina_api_key=SecretStr("test-jina-key"),
     )
-    
+
     assert settings.database_url.get_secret_value() == "postgresql://localhost/test"
     assert settings.redis_url.get_secret_value() == "redis://localhost:6379"
     assert settings.algorithm == "HS256"
@@ -46,7 +46,7 @@ def test_settings_log_level_validation():
             jina_api_key=SecretStr("test-jina-key"),
             log_level="INVALID",
         )
-    
+
     assert "log_level" in str(exc_info.value)
 
 
@@ -59,7 +59,7 @@ def test_settings_log_level_case_insensitive():
         jina_api_key=SecretStr("test-jina-key"),
         log_level="debug",
     )
-    
+
     assert settings.log_level == "DEBUG"
 
 
@@ -84,7 +84,7 @@ def test_settings_is_production():
         jina_api_key=SecretStr("test-jina-key"),
         environment="production",
     )
-    
+
     assert settings.is_production is True
     assert settings.is_local is False
 
@@ -98,7 +98,7 @@ def test_settings_is_local():
         jina_api_key=SecretStr("test-jina-key"),
         environment="local",
     )
-    
+
     assert settings.is_local is True
     assert settings.is_production is False
 
@@ -111,7 +111,7 @@ def test_settings_optional_sentry_dsn():
         secret_key=SecretStr("test-secret-key"),
         jina_api_key=SecretStr("test-jina-key"),
     )
-    
+
     assert settings.sentry_dsn is None
 
 
@@ -124,6 +124,6 @@ def test_settings_with_sentry_dsn():
         jina_api_key=SecretStr("test-jina-key"),
         sentry_dsn=SecretStr("https://example@sentry.io/123"),
     )
-    
+
     assert settings.sentry_dsn is not None
     assert "sentry.io" in settings.sentry_dsn.get_secret_value()

@@ -155,7 +155,7 @@ class Settings(BaseSettings):
 def get_settings() -> Settings:
     """
     Get cached settings instance.
-    
+
     Settings are loaded once and cached for the application lifetime.
     """
     return Settings()
@@ -164,7 +164,7 @@ def get_settings() -> Settings:
 def get_test_settings() -> Settings:
     """
     Get settings for testing with overridden database URL.
-    
+
     Uses a separate test database to avoid polluting production data.
     """
     settings = get_settings()

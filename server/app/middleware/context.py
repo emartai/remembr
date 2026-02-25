@@ -31,7 +31,7 @@ security = HTTPBearer(auto_error=False)
 class RequestContext:
     """
     Request-scoped context containing authentication and tenant information.
-    
+
     This context is stored in contextvars and accessible anywhere in the
     call stack without explicit passing.
     """
@@ -53,7 +53,7 @@ class RequestContext:
 def get_current_context() -> RequestContext | None:
     """
     Get the current request context from contextvars.
-    
+
     Returns:
         RequestContext if set, None otherwise
     """
@@ -63,7 +63,7 @@ def get_current_context() -> RequestContext | None:
 def set_current_context(context: RequestContext) -> None:
     """
     Set the current request context in contextvars.
-    
+
     Args:
         context: RequestContext to set
     """
@@ -76,11 +76,11 @@ async def _try_jwt_auth(
 ) -> RequestContext | None:
     """
     Try to authenticate using JWT token.
-    
+
     Args:
         credentials: HTTP Bearer credentials
         db: Database session
-        
+
     Returns:
         RequestContext if JWT is valid, None otherwise
     """
@@ -152,12 +152,12 @@ async def _try_api_key_auth(
 ) -> RequestContext | None:
     """
     Try to authenticate using API key.
-    
+
     Args:
         x_api_key: API key from header
         db: Database session
         redis: Redis client
-        
+
     Returns:
         RequestContext if API key is valid, None otherwise
     """
@@ -198,19 +198,19 @@ async def get_request_context(
 ) -> RequestContext | None:
     """
     FastAPI dependency that extracts authentication context from request.
-    
+
     Tries JWT first, then falls back to API key. Returns None if neither
     authentication method succeeds.
-    
+
     The context is also stored in contextvars for access anywhere in the
     call stack.
-    
+
     Args:
         credentials: Optional JWT Bearer credentials
         x_api_key: Optional API key from header
         db: Database session
         redis: Redis client
-        
+
     Returns:
         RequestContext if authenticated, None otherwise
     """
@@ -243,15 +243,15 @@ async def require_auth(
 ) -> RequestContext:
     """
     FastAPI dependency that requires authentication.
-    
+
     Wraps get_request_context and raises 401 if no valid authentication found.
-    
+
     Args:
         context: Request context from get_request_context
-        
+
     Returns:
         RequestContext
-        
+
     Raises:
         HTTPException: 401 if not authenticated
     """

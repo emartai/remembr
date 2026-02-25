@@ -25,10 +25,10 @@ async def init_db():
             org = Organization(name="Demo Organization")
             db.add(org)
             await db.commit()
-            
+
             print(f"✓ Created organization: {org.name} (ID: {org.id})")
             print("\nDatabase initialized successfully!")
-            
+
         except Exception as e:
             print(f"✗ Error initializing database: {e}")
             await db.rollback()

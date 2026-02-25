@@ -18,7 +18,7 @@ async def jwt_only_endpoint(
 ):
     """
     Endpoint that requires JWT authentication.
-    
+
     Usage:
         curl -X GET http://localhost:8000/api/v1/examples/jwt-only \
           -H "Authorization: Bearer <access_token>"
@@ -38,7 +38,7 @@ async def api_key_only_endpoint(
 ):
     """
     Endpoint that requires API key authentication.
-    
+
     Usage:
         curl -X GET http://localhost:8000/api/v1/examples/api-key-only \
           -H "X-API-Key: rmbr_..."
@@ -59,7 +59,7 @@ async def get_flexible_auth(
 ) -> dict:
     """
     Flexible authentication that accepts either JWT or API key.
-    
+
     Returns a normalized auth context with org_id and optional user_id.
     """
     if jwt_user:
@@ -89,11 +89,11 @@ async def flexible_endpoint(
 ):
     """
     Endpoint that accepts either JWT or API key authentication.
-    
+
     Usage with JWT:
         curl -X GET http://localhost:8000/api/v1/examples/flexible \
           -H "Authorization: Bearer <access_token>"
-    
+
     Usage with API key:
         curl -X GET http://localhost:8000/api/v1/examples/flexible \
           -H "X-API-Key: rmbr_..."
@@ -113,7 +113,7 @@ async def org_data_endpoint(
 ):
     """
     Example showing how to use auth context for org-scoped queries.
-    
+
     Both JWT and API key authentication provide org_id for scoping.
     """
     org_id = auth["org_id"]

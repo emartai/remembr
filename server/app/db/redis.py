@@ -16,7 +16,7 @@ _connection_pool: ConnectionPool | None = None
 async def init_redis() -> None:
     """
     Initialize Redis connection pool and client.
-    
+
     Called during application startup.
     """
     global _redis_client, _connection_pool
@@ -49,7 +49,7 @@ async def init_redis() -> None:
 async def close_redis() -> None:
     """
     Close Redis connection pool.
-    
+
     Called during application shutdown.
     """
     global _redis_client, _connection_pool
@@ -68,10 +68,10 @@ async def close_redis() -> None:
 async def get_redis() -> AsyncGenerator[Redis, None]:
     """
     Dependency for getting Redis client in FastAPI routes.
-    
+
     Yields:
         Redis client instance
-        
+
     Raises:
         RuntimeError: If Redis is not initialized
     """
@@ -84,10 +84,10 @@ async def get_redis() -> AsyncGenerator[Redis, None]:
 def get_redis_client() -> Redis:
     """
     Get Redis client instance directly (for use outside FastAPI routes).
-    
+
     Returns:
         Redis client instance
-        
+
     Raises:
         RuntimeError: If Redis is not initialized
     """

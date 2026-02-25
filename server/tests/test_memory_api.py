@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import sys
 import types
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 from uuid import uuid4
@@ -35,19 +35,19 @@ from app.api.v1.memory import (
     RestoreSessionRequest,
     create_session,
     create_session_checkpoint,
-    get_session,
-    get_session_history,
-    memory_diff,
-    list_session_checkpoints,
-    list_sessions,
-    log_memory,
     delete_memory_episode,
     delete_session_memories,
     delete_user_memories,
+    get_session,
+    get_session_history,
+    list_session_checkpoints,
+    list_sessions,
+    log_memory,
+    memory_diff,
     restore_session_checkpoint,
     search_memory,
 )
-from app.exceptions import NotFoundError, AuthorizationError
+from app.exceptions import AuthorizationError, NotFoundError
 from app.middleware.context import RequestContext
 from app.services.short_term import SessionMessage
 
@@ -93,11 +93,11 @@ async def test_create_session_and_log_memory(monkeypatch, ctx):
     redis = AsyncMock()
 
     session_id = uuid4()
-    episode = SimpleNamespace(id=uuid4(), session_id=session_id, created_at=datetime.now(timezone.utc))
+    episode = SimpleNamespace(id=uuid4(), session_id=session_id, created_at=datetime.now(UTC))
 
     async def _refresh_session(session_obj):
         session_obj.id = session_id
-        session_obj.created_at = datetime.now(timezone.utc)
+        session_obj.created_at = datetime.now(UTC)
 
     db.refresh.side_effect = _refresh_session
     db.execute.return_value = _ScalarResult(SimpleNamespace(id=session_id, org_id=ctx.org_id))
@@ -134,7 +134,7 @@ async def test_checkpoint_and_restore(monkeypatch, ctx):
     checkpoint_id = uuid4()
     checkpoint_episode = SimpleNamespace(
         id=checkpoint_id,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
         metadata_={"message_count": 2},
     )
 
@@ -211,7 +211,7 @@ async def test_search_memory_enforces_limit_and_returns_results(monkeypatch, ctx
                     "content": "found",
                     "role": "user",
                     "score": 0.92,
-                    "created_at": datetime.now(timezone.utc),
+                    "created_at": datetime.now(UTC),
                     "tags": ["a"],
                 }
             ],
@@ -243,8 +243,8 @@ async def test_list_sessions_get_session_history_and_checkpoints(monkeypatch, ct
         team_id=None,
         user_id=ctx.user_id,
         agent_id=None,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
         metadata_={"topic": "demo"},
     )
     episode = SimpleNamespace(
@@ -254,7 +254,7 @@ async def test_list_sessions_get_session_history_and_checkpoints(monkeypatch, ct
         content="hello",
         tags=["x"],
         metadata_={"k": "v"},
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
     db.execute.side_effect = [
@@ -277,7 +277,7 @@ async def test_list_sessions_get_session_history_and_checkpoints(monkeypatch, ct
                 content="hello",
                 tokens=2,
                 priority_score=1.0,
-                timestamp=datetime.now(timezone.utc),
+                timestamp=datetime.now(UTC),
             )
         ]
     )
@@ -285,7 +285,7 @@ async def test_list_sessions_get_session_history_and_checkpoints(monkeypatch, ct
         return_value=[
             {
                 "checkpoint_id": str(uuid4()),
-                "created_at": datetime.now(timezone.utc),
+                "created_at": datetime.now(UTC),
                 "message_count": 2,
             }
         ]
@@ -345,7 +345,7 @@ async def test_forgetting_endpoints(monkeypatch, ctx):
 @pytest.mark.asyncio
 async def test_memory_diff(monkeypatch, ctx):
     db = AsyncMock()
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     later = now
 
     episode = SimpleNamespace(

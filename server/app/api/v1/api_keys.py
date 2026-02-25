@@ -79,7 +79,11 @@ async def create_new_api_key(
     )
     await db.commit()
 
-    logger.info("API key created via endpoint", key_id=str(api_key.id), user_id=str(current_user.id))
+    logger.info(
+        "API key created via endpoint",
+        key_id=str(api_key.id),
+        user_id=str(current_user.id),
+    )
 
     return success(
         CreateAPIKeyResponse(

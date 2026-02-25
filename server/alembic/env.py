@@ -11,18 +11,6 @@ from alembic import context
 
 # Import the Base and all models
 from app.db.base import Base
-from app.models import (
-    Agent,
-    APIKey,
-    AuditLog,
-    Embedding,
-    Episode,
-    MemoryFact,
-    Organization,
-    Session,
-    Team,
-    User,
-)
 
 # this is the Alembic Config object
 config = context.config

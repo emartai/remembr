@@ -19,10 +19,10 @@ async def protected_endpoint(
 ):
     """
     Example protected endpoint that requires authentication.
-    
+
     The require_auth dependency ensures the user is authenticated via
     JWT or API key. The context contains org_id, user_id, and agent_id.
-    
+
     The get_db dependency automatically sets the org context for RLS.
     """
     logger.info(
@@ -47,7 +47,7 @@ async def optional_auth_endpoint(
 ):
     """
     Example endpoint with optional authentication.
-    
+
     Uses get_current_context() to check if user is authenticated
     without requiring it.
     """
@@ -77,7 +77,7 @@ async def context_anywhere_endpoint(
 ):
     """
     Example showing context is accessible anywhere in the call stack.
-    
+
     The context is stored in contextvars, so you can access it from
     any function without passing it explicitly.
     """
@@ -94,7 +94,7 @@ async def context_anywhere_endpoint(
 def _helper_function() -> dict:
     """
     Helper function that accesses context without it being passed.
-    
+
     This demonstrates that context is available anywhere in the call stack
     via contextvars, not just in the endpoint function.
     """
@@ -117,7 +117,7 @@ def _helper_function() -> dict:
 async def example_service_function(db: AsyncSession):
     """
     Example service function that uses context.
-    
+
     Service functions can access the request context without it being
     passed as a parameter.
     """

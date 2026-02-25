@@ -83,7 +83,7 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     """
     Application factory for creating configured FastAPI instances.
-    
+
     Returns:
         Configured FastAPI application
     """
@@ -101,7 +101,11 @@ def create_app() -> FastAPI:
     # CORS middleware
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins if settings.cors_origins else (["*"] if settings.is_local else []),
+        allow_origins=(
+            settings.cors_origins
+            if settings.cors_origins
+            else (["*"] if settings.is_local else [])
+        ),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

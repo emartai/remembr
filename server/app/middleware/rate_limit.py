@@ -38,7 +38,8 @@ def _token_from_request(request: Request) -> str:
     """Resolve limiter key using API key/JWT token string, fallback to client ip."""
     auth_header = request.headers.get("authorization", "").strip()
     if auth_header.lower().startswith("bearer "):
-        return auth_header.split(" ", 1)[1].strip() or (request.client.host if request.client else "unknown")
+        token = auth_header.split(" ", 1)[1].strip()
+        return token or (request.client.host if request.client else "unknown")
 
     x_api_key = request.headers.get("x-api-key", "").strip()
     if x_api_key:

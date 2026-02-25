@@ -5,10 +5,11 @@ Revises: 001
 Create Date: 2026-02-23 19:00:00.000000
 
 """
-from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 from pgvector.sqlalchemy import Vector
+from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '002'
@@ -39,7 +40,7 @@ def upgrade() -> None:
         sa.ForeignKeyConstraint(['org_id'], ['organizations.id'], ondelete='CASCADE'),
         sa.PrimaryKeyConstraint('id')
     )
-    
+
     # Create indexes
     op.create_index(op.f('ix_embeddings_org_id'), 'embeddings', ['org_id'], unique=False)
     op.create_index(op.f('ix_embeddings_episode_id'), 'embeddings', ['episode_id'], unique=False)
