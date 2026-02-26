@@ -12,7 +12,7 @@ pip install remembr-autogen-adapter pyautogen remembr
 from remembr import RemembrClient
 from adapters.autogen.remembr_autogen_memory import RemembrAutoGenMemory
 
-client = RemembrClient(api_key="<API_KEY>", base_url="https://api.remembr.dev/api/v1")
+client = RemembrClient(api_key="<API_KEY>", base_url="http://localhost:8000/api/v1")
 memory = RemembrAutoGenMemory(client=client)
 
 memory.save_context({"message": "Customer locale is fr-FR"}, {"response": "Stored"})

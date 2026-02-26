@@ -57,7 +57,7 @@ async def live_client() -> RemembrClient:
     if not api_key:
         pytest.skip("REMEMBR_TEST_API_KEY is not set; skipping live integration tests")
 
-    base_url = os.getenv("REMEMBR_TEST_BASE_URL", "https://api.remembr.dev")
+    base_url = os.getenv("REMEMBR_TEST_BASE_URL", "http://localhost:8000/api/v1")
     async with RemembrClient(api_key=api_key, base_url=base_url, timeout=30) as client:
         yield client
 

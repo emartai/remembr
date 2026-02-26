@@ -7,7 +7,7 @@ import {
 } from './errors';
 import { RemembrConfig } from './types';
 
-const DEFAULT_BASE_URL = 'https://api.remembr.dev';
+const DEFAULT_BASE_URL = 'http://localhost:8000/api/v1';
 const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_ATTEMPTS = 4;
 

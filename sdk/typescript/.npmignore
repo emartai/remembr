@@ -1,0 +1,9 @@
+*.test.ts
+*.spec.ts
+.env
+node_modules
+src/
+tsconfig.json
+jest.config.js
+tests/
+.gitignore

@@ -12,7 +12,7 @@ pip install remembr-langchain-adapter langchain langchain-core remembr
 from remembr import RemembrClient
 from adapters.langchain.remembr_memory import RemembrMemory
 
-client = RemembrClient(api_key="<API_KEY>", base_url="https://api.remembr.dev/api/v1")
+client = RemembrClient(api_key="<API_KEY>", base_url="http://localhost:8000/api/v1")
 memory = RemembrMemory(client=client)
 
 memory.save_context({"input": "I prefer concise answers."}, {"output": "Noted."})

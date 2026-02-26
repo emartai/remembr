@@ -12,7 +12,7 @@ pip install remembr-openai-agents-adapter openai-agents remembr
 from remembr import RemembrClient
 from adapters.openai_agents.remembr_openai_memory import RemembrMemoryTools
 
-client = RemembrClient(api_key="<API_KEY>", base_url="https://api.remembr.dev/api/v1")
+client = RemembrClient(api_key="<API_KEY>", base_url="http://localhost:8000/api/v1")
 RemembrMemoryTools.configure(client)
 
 print(RemembrMemoryTools.store_memory("Remember this", "session-id"))

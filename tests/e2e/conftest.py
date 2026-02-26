@@ -34,7 +34,7 @@ def e2e_api_key() -> str:
 
 @pytest.fixture(scope="session")
 def e2e_base_url() -> str:
-    return os.getenv("REMEMBR_E2E_BASE_URL", "https://api.remembr.dev/v1")
+    return os.getenv("REMEMBR_E2E_BASE_URL", "http://localhost:8000/api/v1")
 
 
 @pytest.fixture
@@ -111,7 +111,7 @@ def org_api_key_b() -> str:
 
 @pytest.fixture(scope="session")
 def org_base_url() -> str:
-    return os.getenv("REMEMBR_E2E_BASE_URL", "https://api.remembr.dev/v1")
+    return os.getenv("REMEMBR_E2E_BASE_URL", "http://localhost:8000/api/v1")
 
 
 @pytest.fixture

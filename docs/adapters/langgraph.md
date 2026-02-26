@@ -12,7 +12,7 @@ pip install remembr-langgraph-adapter langgraph langchain-core remembr
 from remembr import RemembrClient
 from adapters.langgraph.remembr_langgraph_memory import RemembrLangGraphMemory
 
-client = RemembrClient(api_key="<API_KEY>", base_url="https://api.remembr.dev/api/v1")
+client = RemembrClient(api_key="<API_KEY>", base_url="http://localhost:8000/api/v1")
 adapter = RemembrLangGraphMemory(client=client)
 
 state = {"messages": [{"role": "user", "content": "Remember my preferred chart type: bar"}]}

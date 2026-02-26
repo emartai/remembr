@@ -12,7 +12,7 @@ pip install remembr-llamaindex-adapter llama-index remembr
 from remembr import RemembrClient
 from adapters.llamaindex.remembr_llamaindex_memory import RemembrMemoryBuffer
 
-client = RemembrClient(api_key="<API_KEY>", base_url="https://api.remembr.dev/api/v1")
+client = RemembrClient(api_key="<API_KEY>", base_url="http://localhost:8000/api/v1")
 
 memory = RemembrMemoryBuffer(client=client, token_limit=256)
 memory.put("Prefer weekly digests")

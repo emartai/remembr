@@ -1,6 +1,6 @@
 # API Reference
 
-Base URL: `https://api.remembr.dev/api/v1`
+Base URL: `http://localhost:8000/api/v1`
 
 Auth:
 - **Bearer JWT** for `/auth/*`, `/api-keys/*`, and all memory/session APIs.

@@ -234,7 +234,7 @@ E2E tests live in `tests/e2e/` and run against real Remembr infrastructure.
 
 ```bash
 export REMEMBR_E2E_API_KEY=<org api key>
-export REMEMBR_E2E_BASE_URL=https://api.remembr.dev/v1
+export REMEMBR_E2E_BASE_URL=http://localhost:8000/api/v1
 
 # Optional for multi-tenant isolation test
 export REMEMBR_E2E_API_KEY_ORG_A=<org A key>

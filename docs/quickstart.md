@@ -25,7 +25,7 @@ export REMEMBR_API_KEY="rk_live_or_test_key"
 Optional (self-hosted or staging API):
 
 ```bash
-export REMEMBR_BASE_URL="https://api.remembr.dev/v1"
+export REMEMBR_BASE_URL="http://localhost:8000/api/v1"
 ```
 
 ## 3) Store your first memory (Python)
@@ -39,7 +39,7 @@ from remembr import RemembrClient
 async def main() -> None:
     client = RemembrClient(
         api_key=os.environ["REMEMBR_API_KEY"],
-        base_url=os.getenv("REMEMBR_BASE_URL", "https://api.remembr.dev/v1"),
+        base_url=os.getenv("REMEMBR_BASE_URL", "http://localhost:8000/api/v1"),
     )
     try:
         session = await client.create_session(metadata={"source": "quickstart-python"})
@@ -76,7 +76,7 @@ import { RemembrClient } from '@remembr/sdk';
 async function main() {
   const client = new RemembrClient({
     apiKey: process.env.REMEMBR_API_KEY!,
-    baseUrl: process.env.REMEMBR_BASE_URL ?? 'https://api.remembr.dev/v1',
+    baseUrl: process.env.REMEMBR_BASE_URL ?? 'http://localhost:8000/api/v1',
   });
 
   const session = await client.createSession({

@@ -2,7 +2,7 @@
 
 Run:
     pip install locust
-    REMEMBR_API_KEY=<key> locust -f tests/performance/locustfile.py --host https://api.remembr.dev
+    REMEMBR_API_KEY=<key> locust -f tests/performance/locustfile.py --host http://localhost:8000
 
 Suggested run profile:
     - 10 users, spawn rate 2

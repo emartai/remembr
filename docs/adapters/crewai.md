@@ -12,7 +12,7 @@ pip install remembr-crewai-adapter crewai remembr
 from remembr import RemembrClient
 from adapters.crewai.remembr_crew_memory import RemembrCrewMemory
 
-client = RemembrClient(api_key="<API_KEY>", base_url="https://api.remembr.dev/api/v1")
+client = RemembrClient(api_key="<API_KEY>", base_url="http://localhost:8000/api/v1")
 memory = RemembrCrewMemory(client=client, agent_id="agent-a", team_id="team-1")
 
 memory.save("Escalate P1 incidents immediately")

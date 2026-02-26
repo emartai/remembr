@@ -1,9 +1,25 @@
 {
   "name": "@remembr/sdk",
   "version": "0.1.0",
-  "description": "TypeScript SDK for Remembr memory service",
+  "description": "Persistent memory infrastructure for AI agents",
+  "author": "Emmanuel Nwanguma",
+  "license": "MIT",
+  "homepage": "https://github.com/emartai/remembr",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/emartai/remembr.git",
+    "directory": "sdk/typescript"
+  },
+  "bugs": {
+    "url": "https://github.com/emartai/remembr/issues"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
+  ],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -14,16 +30,17 @@
   "scripts": {
     "build": "tsc",
     "test": "tsc --noEmit && jest --coverage",
-    "lint": "tslint"
+    "lint": "tslint",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
-    "remembr",
-    "memory",
     "ai",
-    "agents"
+    "memory",
+    "agents",
+    "llm",
+    "langchain",
+    "embeddings"
   ],
-  "author": "",
-  "license": "MIT",
   "dependencies": {},
   "devDependencies": {
     "typescript": "^5.3.0",

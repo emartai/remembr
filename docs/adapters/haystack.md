@@ -12,7 +12,7 @@ pip install remembr-haystack-adapter farm-haystack remembr
 from remembr import RemembrClient
 from adapters.haystack.remembr_haystack_memory import RemembrMemoryRetriever, RemembrMemoryWriter
 
-client = RemembrClient(api_key="<API_KEY>", base_url="https://api.remembr.dev/api/v1")
+client = RemembrClient(api_key="<API_KEY>", base_url="http://localhost:8000/api/v1")
 writer = RemembrMemoryWriter(client=client, default_session_id="session-id")
 retriever = RemembrMemoryRetriever(client=client, default_session_id="session-id")
 

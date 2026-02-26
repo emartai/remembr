@@ -12,7 +12,7 @@ pip install remembr-pydantic-ai-adapter pydantic-ai remembr
 from remembr import RemembrClient
 from adapters.pydantic_ai.remembr_pydantic_memory import RemembrMemoryDep
 
-client = RemembrClient(api_key="<API_KEY>", base_url="https://api.remembr.dev/api/v1")
+client = RemembrClient(api_key="<API_KEY>", base_url="http://localhost:8000/api/v1")
 deps = RemembrMemoryDep(client=client, session_id="session-id")
 ```
 

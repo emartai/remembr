@@ -26,7 +26,7 @@ class RemembrClient:
     def __init__(
         self,
         api_key: str | None = None,
-        base_url: str = "https://api.remembr.dev",
+        base_url: str = "http://localhost:8000/api/v1",
         timeout: float = 30,
     ) -> None:
         resolved_api_key = api_key or os.getenv("REMEMBR_API_KEY")
