@@ -1,0 +1,3 @@
+[storage]
+backend = "sqlite"
+sqlite_path = ".mindr/mindr.sqlite"

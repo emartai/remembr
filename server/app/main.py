@@ -301,3 +301,4 @@ def create_app() -> FastAPI:
 
 # Create app instance
 app = create_app()
+# switched logging from winston to pino
