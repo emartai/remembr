@@ -1,0 +1,34 @@
+name: PR welcome & triage
+
+# Greets every PR and, if it does not link an issue, adds a friendly reminder
+# plus a "needs triage" label. It never closes anything — a human always reviews.
+
+on:
+  pull_request_target:
+    types: [opened]
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  welcome:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const { owner, repo } = context.repo;
+            const author = pr.user.login;
+            const issue_number = pr.number;
+            const body = pr.body || '';
+            const linksIssue = /\b(clos|fix|resolv)\w*\s+#\d+/i.test(body);
+            let msg = `Thanks for the pull request, @${author}! 🎉 A maintainer will review it soon.`;
+            if (!linksIssue) {
+              msg += `\n\n> **Tip:** link the issue this addresses (e.g. **Closes #123**) so it auto-closes on merge. If you have not claimed the issue yet, comment \`/claim\` on it so we do not double up. Nothing here is ever auto-closed — a human always reviews.`;
+              try {
+                await github.rest.issues.addLabels({ owner, repo, issue_number, labels: ['needs triage'] });
+              } catch (e) {}
+            }
+            await github.rest.issues.createComment({ owner, repo, issue_number, body: msg });
