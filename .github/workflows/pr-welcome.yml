@@ -31,4 +31,5 @@ jobs:
                 await github.rest.issues.addLabels({ owner, repo, issue_number, labels: ['needs triage'] });
               } catch (e) {}
             }
+            msg += `\n\n⭐ If you find Emart AI useful, please **star the repo** — it genuinely helps more developers discover it (and it looks great on your contributions too).`;
             await github.rest.issues.createComment({ owner, repo, issue_number, body: msg });
