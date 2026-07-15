@@ -4,9 +4,42 @@
 
 **Repository:** https://github.com/emartai/remembr
 
+## Commands
+
+| Task | Command |
+|------|---------|
+| Install | `make setup` |
+
 ## Stack & Architecture
 
-_Could not detect stack from project files._
+**Language**
+- Python — language
+- TypeScript — language
+
+**Framework**
+- FastAPI — web framework
+- LangChain — LLM framework
+- LlamaIndex — LLM framework
+- React — UI library
+
+**Database**
+- Alembic — DB migrations
+- pgvector — vector search
+- PostgreSQL — database driver
+- Redis — cache / pub-sub
+- SQLAlchemy — ORM
+
+**Testing**
+- Jest — test runner
+
+**Tooling**
+- Celery — task queue
+- HTTPX — HTTP client
+- OpenAI — LLM client
+- Pydantic — data validation
+- Pydantic Settings — config management
+- Sentence Transformers — text embeddings
+- Uvicorn — ASGI server
 
 ## Conventions
 
@@ -38,10 +71,11 @@ _Could not detect stack from project files._
 
 ## Recent Decisions
 
-_No decisions recorded yet._
+- **2026-07-12** — refactor: migrate memory layer to new architecture *(keyword)*
+- **2026-07-12** — remembr uses pgvector for episodic long-term memory
 
 ## Active Warnings
 
 ### Technical Debt
 
-_No active debt items._
+- `server/app/main.py:undefined` — example debt for dogfood test
