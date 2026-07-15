@@ -2,13 +2,20 @@
 
 # remembr
 
-**Repository:** https://github.com/emartai/remembr
+**Repository:** https://github.com/emartai/remembr  
+**Language:** mixed
 
 ## Commands
 
 | Task | Command |
 |------|---------|
 | Install | `make setup` |
+| Test (examples/langgraph-multi-agent) | `cd examples/langgraph-multi-agent && pytest` |
+| Test (sdk/python) | `cd sdk/python && pytest` |
+| Build (sdk/typescript) | `cd sdk/typescript && npm run build` |
+| Test (sdk/typescript) | `cd sdk/typescript && npm test` |
+| Lint (sdk/typescript) | `cd sdk/typescript && npm run lint` |
+| Test (server) | `cd server && pytest` |
 
 ## Stack & Architecture
 
