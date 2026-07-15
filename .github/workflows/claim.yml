@@ -15,7 +15,7 @@ jobs:
     if: ${{ !github.event.issue.pull_request && startsWith(github.event.comment.body, '/claim') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v9
         with:
           script: |
             const me = context.payload.comment.user.login;
