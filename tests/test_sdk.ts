@@ -11,7 +11,7 @@ async function main() {
 
   // Initialize client with JWT token
   const client = new RemembrClient({
-    apiKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwODY3ODhhYi0xNjc0LTRhODEtYjdkMi04MTcyNmFlYzUyNzUiLCJlbWFpbCI6Im53YW5ndW1hZW1tYW51ZWwyOUBnbWFpbC5jb20iLCJleHAiOjE3NzE5NzU0OTcsInR5cGUiOiJhY2Nlc3MifQ.k-BuPVa5oLwh_iyJr0i0pXyBtobFr6pOqrT426ypr7E',
+    apiKey: (process.env.REMEMBR_TEST_TOKEN ?? ''),
     baseUrl: 'http://localhost:8000/api/v1',
   });
 

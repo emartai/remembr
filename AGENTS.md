@@ -1,4 +1,3 @@
-<!-- mindr-generated -->
 
 # remembr
 
@@ -80,9 +79,3 @@
 
 - **2026-07-12** — refactor: migrate memory layer to new architecture *(keyword)*
 - **2026-07-12** — remembr uses pgvector for episodic long-term memory
-
-## Active Warnings
-
-### Technical Debt
-
-- `server/app/main.py:undefined` — example debt for dogfood test

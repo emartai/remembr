@@ -49,6 +49,6 @@ main();
 
 ## Docs
 
-- Full docs: https://github.com/ai-emart/remembr/tree/main/docs
-- Quick start: https://github.com/ai-emart/remembr#quick-start
-- API reference: https://github.com/ai-emart/remembr/blob/main/docs/api-reference.md
+- Full docs: https://github.com/emartai/remembr/tree/main/docs
+- Quick start: https://github.com/emartai/remembr#quick-start
+- API reference: https://github.com/emartai/remembr/blob/main/docs/api-reference.md

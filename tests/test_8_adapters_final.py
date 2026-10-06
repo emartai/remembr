@@ -3,13 +3,14 @@ Final End-to-End Test for All 8 Adapters
 Waits longer for embeddings and provides detailed debugging.
 """
 
+import os
 import sys
 import time
 import requests
 
 # Configuration
 BASE_URL = "http://localhost:8000/api/v1"
-JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwODY3ODhhYi0xNjc0LTRhODEtYjdkMi04MTcyNmFlYzUyNzUiLCJlbWFpbCI6Im53YW5ndW1hZW1tYW51ZWwyOUBnbWFpbC5jb20iLCJleHAiOjE3NzE5OTQzNDMsInR5cGUiOiJhY2Nlc3MifQ.5nslDRvEvmStDrG7TR3B1EMZv0zWuI1-T_t3_vIXg34"
+JWT_TOKEN = os.environ.get("REMEMBR_TEST_TOKEN", "")
 
 sys.path.insert(0, 'sdk/python')
 sys.path.insert(0, 'adapters')

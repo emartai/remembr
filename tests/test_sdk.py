@@ -1,4 +1,5 @@
 """Test the Remembr Python SDK"""
+import os
 import asyncio
 import sys
 sys.path.insert(0, 'sdk/python')
@@ -13,7 +14,7 @@ async def main():
     # Initialize client with JWT token (not API key)
     # Note: The SDK uses Bearer token auth, not X-API-Key
     client = RemembrClient(
-        api_key="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwODY3ODhhYi0xNjc0LTRhODEtYjdkMi04MTcyNmFlYzUyNzUiLCJlbWFpbCI6Im53YW5ndW1hZW1tYW51ZWwyOUBnbWFpbC5jb20iLCJleHAiOjE3NzE5NzU0OTcsInR5cGUiOiJhY2Nlc3MifQ.k-BuPVa5oLwh_iyJr0i0pXyBtobFr6pOqrT426ypr7E",
+        api_key=os.environ.get("REMEMBR_TEST_TOKEN", ""),
         base_url="http://localhost:8000/api/v1"
     )
     

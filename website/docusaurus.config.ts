@@ -7,9 +7,9 @@ const config: Config = {
   tagline: 'Persistent memory infrastructure for AI agents',
   favicon: 'img/favicon.ico',
 
-  url: 'https://ai-emart.github.io',
+  url: 'https://emartai.github.io',
   baseUrl: '/remembr/',
-  organizationName: 'ai-emart',
+  organizationName: 'emartai',
   projectName: 'remembr',
   trailingSlash: false,
 
@@ -26,7 +26,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          editUrl: 'https://github.com/ai-emart/remembr/edit/main/',
+          editUrl: 'https://github.com/emartai/remembr/edit/main/',
         },
         blog: false,
         theme: {
@@ -61,7 +61,7 @@ const config: Config = {
           position: 'left',
         },
         {
-          href: 'https://github.com/ai-emart/remembr',
+          href: 'https://github.com/emartai/remembr',
           label: 'GitHub',
           position: 'right',
         },
@@ -86,7 +86,7 @@ const config: Config = {
         {
           title: 'Community',
           items: [
-            { label: 'GitHub', href: 'https://github.com/ai-emart/remembr' },
+            { label: 'GitHub', href: 'https://github.com/emartai/remembr' },
             { label: 'PyPI', href: 'https://pypi.org/project/remembr/' },
             { label: 'npm', href: 'https://www.npmjs.com/package/@remembr/sdk' },
           ],

@@ -178,12 +178,12 @@ alembic upgrade head
 ## Support
 
 For questions or issues:
-- **GitHub Issues**: [Report bugs or request features](https://github.com/ai-emart/remembr/issues)
+- **GitHub Issues**: [Report bugs or request features](https://github.com/emartai/remembr/issues)
 - **Email**: [nwangumaemmanuel29@gmail.com](mailto:nwangumaemmanuel29@gmail.com)
 - **Documentation**: [docs/](docs/)
 
 ---
 
 **Maintained by**: [Emmanuel Nwanguma](https://linkedin.com/in/nwangumaemmanuel)  
-**Repository**: [github.com/ai-emart/remembr](https://github.com/ai-emart/remembr)  
+**Repository**: [github.com/emartai/remembr](https://github.com/emartai/remembr)  
 **License**: MIT

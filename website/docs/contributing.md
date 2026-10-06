@@ -5,7 +5,7 @@ Thanks for helping build Remembr.
 ## Getting started
 
 ```bash
-git clone https://github.com/ai-emart/remembr.git
+git clone https://github.com/emartai/remembr.git
 cd remembr
 python -m venv .venv
 ```

@@ -61,7 +61,7 @@ export default function Home() {
             <Link className={styles.ctaPrimary} to="/remembr/docs/quickstart/langchain">
               Get Started →
             </Link>
-            <Link className={styles.ctaSecondary} to="https://github.com/ai-emart/remembr">
+            <Link className={styles.ctaSecondary} to="https://github.com/emartai/remembr">
               View on GitHub
             </Link>
           </div>

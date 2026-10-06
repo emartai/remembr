@@ -3,13 +3,14 @@ Complete End-to-End Test for All 8 Adapters
 Tests each adapter's ability to store and retrieve memories through Remembr.
 """
 
+import os
 import sys
 import time
 import requests
 
 # Configuration
 BASE_URL = "http://localhost:8000/api/v1"
-JWT_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwODY3ODhhYi0xNjc0LTRhODEtYjdkMi04MTcyNmFlYzUyNzUiLCJlbWFpbCI6Im53YW5ndW1hZW1tYW51ZWwyOUBnbWFpbC5jb20iLCJleHAiOjE3NzE5OTA2NDgsInR5cGUiOiJhY2Nlc3MifQ._dozUmR3DlOf_kHSjyuNt4dR6p4a2Atjktr_Fa4wAeA"
+JWT_TOKEN = os.environ.get("REMEMBR_TEST_TOKEN", "")
 
 sys.path.insert(0, 'sdk/python')
 sys.path.insert(0, 'adapters')

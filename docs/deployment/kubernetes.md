@@ -48,7 +48,7 @@ spec:
     spec:
       containers:
         - name: server
-          image: ghcr.io/ai-emart/remembr-server:latest
+          image: ghcr.io/emartai/remembr-server:latest
           command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
           ports:
             - containerPort: 8000
@@ -78,7 +78,7 @@ spec:
     spec:
       containers:
         - name: worker
-          image: ghcr.io/ai-emart/remembr-server:latest
+          image: ghcr.io/emartai/remembr-server:latest
           command: ["celery", "-A", "app.celery_app", "worker", "--loglevel=info", "--concurrency=2"]
           envFrom:
             - configMapRef:

@@ -1,9 +1,9 @@
 # Remembr
 
-[![CI](https://github.com/ai-emart/remembr/actions/workflows/ci.yml/badge.svg)](https://github.com/ai-emart/remembr/actions/workflows/ci.yml)
+[![CI](https://github.com/emartai/remembr/actions/workflows/ci.yml/badge.svg)](https://github.com/emartai/remembr/actions/workflows/ci.yml)
 [![PyPI version](https://img.shields.io/pypi/v/remembr)](https://pypi.org/project/remembr/)
 [![npm version](https://img.shields.io/npm/v/@remembr/sdk)](https://www.npmjs.com/package/@remembr/sdk)
-[![License](https://img.shields.io/github/license/ai-emart/remembr)](LICENSE)
+[![License](https://img.shields.io/github/license/emartai/remembr)](LICENSE)
 [![Python versions](https://img.shields.io/pypi/pyversions/remembr)](https://pypi.org/project/remembr/)
 
 Remembr gives AI agents durable, searchable memory with a simple `store`, `search`, and `delete` workflow, session-aware context, and a self-hosted stack you can run locally in minutes.
@@ -11,7 +11,7 @@ Remembr gives AI agents durable, searchable memory with a simple `store`, `searc
 ## Quick Start
 
 ```bash
-git clone https://github.com/ai-emart/remembr.git
+git clone https://github.com/emartai/remembr.git
 cd remembr
 cp .env.example .env
 python -c "import secrets; print(secrets.token_hex(32))"
@@ -129,11 +129,10 @@ main();
 
 ## Docs
 
-Full documentation: **https://ai-emart.github.io/remembr/**
+Full documentation: **https://emartai.github.io/remembr/**
 
-- [Framework quickstarts](https://ai-emart.github.io/remembr/docs/quickstart/langchain)
-- [API reference](https://ai-emart.github.io/remembr/docs/api-reference)
-- [Self-hosting guide](https://ai-emart.github.io/remembr/docs/self-hosted)
+- [Framework quickstarts](https://emartai.github.io/remembr/docs/quickstart/langchain)
+- [API reference](https://emartai.github.io/remembr/docs/api-reference)
+- [Self-hosting guide](https://emartai.github.io/remembr/docs/self-hosted)
 - [Python SDK README](sdk/python/README.md)
 - [TypeScript SDK README](sdk/typescript/README.md)
-// test mindragent hook

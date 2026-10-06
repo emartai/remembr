@@ -18,7 +18,7 @@ That's it. Embeddings run locally via Ollama.
 ## 1. Clone the Repository
 
 ```bash
-git clone https://github.com/ai-emart/remembr.git
+git clone https://github.com/emartai/remembr.git
 cd remembr
 ```
 

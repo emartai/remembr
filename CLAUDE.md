@@ -1,4 +1,3 @@
-<!-- mindr-generated -->
 
 # remembr
 
@@ -70,21 +69,3 @@ Context for understanding recent architectural choices:
 
 - **2026-07-12** — refactor: migrate memory layer to new architecture *(keyword)*
 - **2026-07-12** — remembr uses pgvector for episodic long-term memory
-
-## Active Warnings
-
-Known issues to be aware of while working on this codebase:
-
-- `server/app/main.py:undefined` — example debt for dogfood test
-
-## Memory
-
-This file is maintained by **[Mindr](https://github.com/emartai/mindr)**, which observes your commits and learns your codebase conventions automatically.
-
-```
-# Search Mindr memory
-mindr search "<query>"
-
-# Refresh this file
-mindr generate claude-md
-```

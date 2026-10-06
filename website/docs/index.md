@@ -17,7 +17,7 @@ Remembr is persistent memory infrastructure for AI systems. It gives agents a cl
 ## 60-second demo
 
 ```bash
-git clone https://github.com/ai-emart/remembr.git
+git clone https://github.com/emartai/remembr.git
 cd remembr
 cp .env.example .env
 python -c "import secrets; print(secrets.token_hex(32))"

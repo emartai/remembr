@@ -52,7 +52,7 @@ asyncio.run(main())
 ## Local Server Setup
 
 ```bash
-git clone https://github.com/ai-emart/remembr.git
+git clone https://github.com/emartai/remembr.git
 cd remembr
 cp .env.example .env
 python -c "import secrets; print(secrets.token_hex(32))"
@@ -89,7 +89,7 @@ client = RemembrClient(
 
 ## Docs
 
-- Full docs: https://github.com/ai-emart/remembr/tree/main/docs
-- Quick start: https://github.com/ai-emart/remembr#quick-start
-- API reference: https://github.com/ai-emart/remembr/blob/main/docs/api-reference.md
-- Framework adapters: https://github.com/ai-emart/remembr/tree/main/adapters
+- Full docs: https://github.com/emartai/remembr/tree/main/docs
+- Quick start: https://github.com/emartai/remembr#quick-start
+- API reference: https://github.com/emartai/remembr/blob/main/docs/api-reference.md
+- Framework adapters: https://github.com/emartai/remembr/tree/main/adapters
