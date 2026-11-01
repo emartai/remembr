@@ -37,15 +37,11 @@ Always filter by `org_id` first:
 ```python
 # Good - uses org_id index
 result = await db.execute(
-    select(Episode)
-    .where(Episode.org_id == org_id)
-    .order_by(Episode.created_at.desc())
+    select(Episode).where(Episode.org_id == org_id).order_by(Episode.created_at.desc())
 )
 
 # Bad - full table scan
-result = await db.execute(
-    select(Episode).order_by(Episode.created_at.desc())
-)
+result = await db.execute(select(Episode).order_by(Episode.created_at.desc()))
 ```
 
 ### 2. Time-Based Queries
@@ -74,19 +70,17 @@ Use GIN index for tag searches:
 ```python
 # Contains tag
 result = await db.execute(
-    select(Episode)
-    .where(
+    select(Episode).where(
         Episode.org_id == org_id,
-        Episode.tags.contains(['important']),
+        Episode.tags.contains(["important"]),
     )
 )
 
 # Overlaps with tags
 result = await db.execute(
-    select(Episode)
-    .where(
+    select(Episode).where(
         Episode.org_id == org_id,
-        Episode.tags.overlap(['urgent', 'important']),
+        Episode.tags.overlap(["urgent", "important"]),
     )
 )
 ```
@@ -115,7 +109,7 @@ result = await db.execute(
         "query_vector": vector_str,
         "threshold": 0.7,
         "limit": 10,
-    }
+    },
 )
 ```
 
@@ -130,8 +124,7 @@ from sqlalchemy import text
 
 # Analyze query
 result = await db.execute(
-    text("EXPLAIN ANALYZE SELECT * FROM episodes WHERE org_id = :org_id"),
-    {"org_id": org_id}
+    text("EXPLAIN ANALYZE SELECT * FROM episodes WHERE org_id = :org_id"), {"org_id": org_id}
 )
 
 for row in result:
@@ -155,9 +148,7 @@ from sqlalchemy.orm import selectinload
 
 # Good - single query with join
 result = await db.execute(
-    select(Episode)
-    .options(selectinload(Episode.session))
-    .where(Episode.org_id == org_id)
+    select(Episode).options(selectinload(Episode.session)).where(Episode.org_id == org_id)
 )
 
 # Bad - N+1 queries
@@ -173,16 +164,11 @@ Always use `.limit()` for large result sets:
 ```python
 # Good - limited results
 result = await db.execute(
-    select(Episode)
-    .where(Episode.org_id == org_id)
-    .order_by(Episode.created_at.desc())
-    .limit(100)
+    select(Episode).where(Episode.org_id == org_id).order_by(Episode.created_at.desc()).limit(100)
 )
 
 # Bad - could return millions of rows
-result = await db.execute(
-    select(Episode).where(Episode.org_id == org_id)
-)
+result = await db.execute(select(Episode).where(Episode.org_id == org_id))
 ```
 
 ### Use Pagination
@@ -264,9 +250,9 @@ Current pool settings:
 ```python
 engine = create_async_engine(
     database_url,
-    pool_size=5,        # Normal connections
-    max_overflow=10,    # Extra connections under load
-    pool_pre_ping=True, # Check connection health
+    pool_size=5,  # Normal connections
+    max_overflow=10,  # Extra connections under load
+    pool_pre_ping=True,  # Check connection health
 )
 ```
 
@@ -289,12 +275,12 @@ Adjust based on load:
 
 ```python
 # High traffic
-pool_size=20
-max_overflow=30
+pool_size = 20
+max_overflow = 30
 
 # Low traffic
-pool_size=5
-max_overflow=10
+pool_size = 5
+max_overflow = 10
 ```
 
 ## Caching Strategy
@@ -306,14 +292,15 @@ Cache expensive queries:
 ```python
 from app.services.cache import make_key, SHORT_TERM_TTL
 
+
 async def get_user_stats(user_id: uuid.UUID):
     # Try cache first
     cache_key = make_key("stats", "user", str(user_id))
     cached = await cache.get(cache_key)
-    
+
     if cached:
         return cached
-    
+
     # Expensive query
     result = await db.execute(
         text("""
@@ -323,13 +310,13 @@ async def get_user_stats(user_id: uuid.UUID):
             FROM episodes
             WHERE user_id = :user_id
         """),
-        {"user_id": user_id}
+        {"user_id": user_id},
     )
     stats = result.fetchone()._asdict()
-    
+
     # Cache for 30 minutes
     await cache.set(cache_key, stats, ttl_seconds=SHORT_TERM_TTL)
-    
+
     return stats
 ```
 
@@ -373,18 +360,19 @@ Log slow queries in application:
 import time
 from loguru import logger
 
+
 async def execute_with_timing(query):
     start = time.time()
     result = await db.execute(query)
     duration = time.time() - start
-    
+
     if duration > 0.1:  # 100ms threshold
         logger.warning(
             "Slow query detected",
             duration=duration,
             query=str(query),
         )
-    
+
     return result
 ```
 
@@ -407,19 +395,23 @@ Use locust or similar:
 ```python
 from locust import HttpUser, task, between
 
+
 class RemembrUser(HttpUser):
     wait_time = between(1, 3)
-    
+
     @task
     def get_episodes(self):
         self.client.get("/api/v1/episodes")
-    
+
     @task
     def create_episode(self):
-        self.client.post("/api/v1/episodes", json={
-            "content": "Test episode",
-            "role": "user",
-        })
+        self.client.post(
+            "/api/v1/episodes",
+            json={
+                "content": "Test episode",
+                "role": "user",
+            },
+        )
 ```
 
 ## Troubleshooting

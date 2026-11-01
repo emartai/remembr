@@ -9,6 +9,13 @@ from app.models.embedding import Embedding
 from app.models.episode import Episode
 from app.models.memory_fact import MemoryFact
 from app.models.organization import Organization
+from app.models.project_memory import (
+    MemorySpace,
+    Project,
+    ProjectMemory,
+    SpaceGrant,
+    SpacePrincipal,
+)
 from app.models.session import Session
 from app.models.team import Team
 from app.models.user import User
@@ -23,6 +30,11 @@ __all__ = [
     "Episode",
     "MemoryFact",
     "Organization",
+    "Project",
+    "MemorySpace",
+    "ProjectMemory",
+    "SpaceGrant",
+    "SpacePrincipal",
     "Session",
     "Team",
     "User",

@@ -1,0 +1,7 @@
+[mcp_servers.remembr]
+command = "C:/absolute/path/to/venv/Scripts/python.exe"
+args = ["-m", "remembr.mcp"]
+env_vars = ["REMEMBR_URL", "REMEMBR_SPACE_ID", "REMEMBR_API_KEY"]
+startup_timeout_sec = 300
+required = true
+tool_timeout_sec = 180

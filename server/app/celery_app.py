@@ -17,6 +17,12 @@ def create_celery_app() -> Celery:
         "remembr",
         broker=redis_url,
         backend=redis_url,
+        include=[
+            "app.tasks.embeddings",
+            "app.tasks.cleanup",
+            "app.tasks.webhooks",
+            "app.tasks.project_memory",
+        ],
     )
     app.conf.update(
         task_serializer="json",

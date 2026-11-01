@@ -39,6 +39,12 @@ def _cache_key(tenant: str, idempotency_key: str) -> str:
 
 async def idempotency_middleware(request: Request, call_next: Callable) -> Response:
     """FastAPI http middleware for idempotent request handling."""
+    # Project writes use a persistent, payload-checked database key AFTER authorization.
+    # Replaying a cached HTTP response here would bypass grant changes/revocation.
+    from app.config import get_settings
+
+    if request.url.path.startswith(f"{get_settings().api_v1_prefix}/projects"):
+        return await call_next(request)
     key_header = request.headers.get("idempotency-key")
 
     if not key_header or request.method not in IDEMPOTENCY_METHODS:

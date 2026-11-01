@@ -1,295 +1,56 @@
-# Remembr — Self-Hosted Quick Start
+# Remembr local quickstart
 
-Get Remembr running locally in under 5 minutes — no API keys required.
+Run these commands from a source checkout with Python 3.11+, Docker Compose v2 and a running Linux container engine:
 
----
-
-## Prerequisites
-
-| Requirement | Version |
-|-------------|---------|
-| **Docker** & **Docker Compose** | v20+ / v2+ |
-| **curl** | Any recent version |
-
-That's it. Embeddings run locally via Ollama.
-
----
-
-## 1. Clone the Repository
-
-```bash
+```sh
 git clone https://github.com/emartai/remembr.git
 cd remembr
+python scripts/local_setup.py
+python scripts/smoke_test.py
 ```
 
-## 2. Configure Environment
+Use `python3` on systems where that is the Python executable. Initial setup downloads images, dependencies and the local embedding model, so internet access is needed. Setup creates `.env`, generates a signing secret and retains existing data and configured secrets.
 
-```bash
-cp .env.example .env
+The smoke test creates local test accounts, waits for the exact episode's embedding, checks retrieval and tenant isolation, and verifies deletion. It exits with an error if processing fails or exceeds its deadline. Accounts and session metadata remain in the development instance.
+
+- API: `http://localhost:8000/api/v1`
+- API documentation: `http://localhost:8000/docs`
+- Liveness: `http://localhost:8000/api/v1/health`
+- Pipeline readiness: `http://localhost:8000/api/v1/ready`
+
+Read [Local setup and release checks](docs/local-setup.md) for startup order, configuration, status polling, provider options and troubleshooting.
+
+## Use an SDK
+
+Install from this checkout when testing unreleased changes:
+
+```sh
+python -m pip install ./sdk/python
+# Include the optional MCP bridge when connecting MCP-capable agents:
+python -m pip install './sdk/python[mcp]'
+cd sdk/typescript
+npm ci
+npm run build
+npm pack
 ```
 
-Open `.env` and set a secret key:
+The npm command creates a local package archive; install it into your application with `npm install /path/to/remembr-sdk-0.2.1.tgz`. These commands do not publish packages.
 
-```bash
-# Required — generate a secret key for JWT authentication
-SECRET_KEY=$(python -c "import secrets; print(secrets.token_hex(32))")
+Register through `POST /api/v1/auth/register` with `email`, `password` and `org_name`. Use the returned access token as a bearer token for `POST /api/v1/api-keys` with a `name`. Supply the resulting API key to the SDK. The [smoke test](scripts/smoke_test.py) contains an executable example of this sequence without printing credentials.
+
+See the [Python SDK](sdk/python/README.md), [TypeScript SDK](sdk/typescript/README.md) and [API reference](docs/api-reference.md). Memory writes return before background processing completes: poll `GET /api/v1/memory/{episode_id}/status` with your API key until `ready` before expecting semantic retrieval; handle `failed` and impose a timeout.
+
+The key flow above is for private/session memory. For shared project memory, create a project and space, issue a separate `rmsp_` credential per agent, and grant access to that space. Use `client.projects` in either SDK or the optional `remembr-mcp` console entry point. See [shared project memory](docs/shared-project-memory.md) and [agent connections](docs/agent-connections.md). A built wheel can be installed with its MCP extra using `python -m pip install '/path/to/remembr-0.2.1-py3-none-any.whl[mcp]'`.
+
+## Native Ollama alternative
+
+For an existing native Ollama installation, start its service and wait for its local `/api/tags` endpoint to respond before pulling `nomic-embed-text`. In `.env`, set `OLLAMA_BASE_URL=http://host.docker.internal:11434` and `OLLAMA_EMBEDDING_MODEL=nomic-embed-text`, then run `python scripts/local_setup.py`. Setup recognizes the external service and skips the bundled container bootstrap while still checking real inference. This path was clean-install tested with a separate native process and newly downloaded model; the bundled image download remains unverified on the test network. See [local setup](docs/local-setup.md) for isolation and network notes.
+
+## Stop and restart
+
+```sh
+docker compose --profile ollama up -d
+docker compose --profile ollama down
 ```
 
-All other defaults are pre-configured for the Docker Compose setup.
-No Jina AI key or any other API key is needed.
-
-## 3. First-Time Setup (one command)
-
-```bash
-bash scripts/docker-init.sh
-```
-
-This script:
-1. Starts PostgreSQL, Redis, and Ollama
-2. Pulls the `nomic-embed-text` embedding model (~274 MB, once only)
-3. Starts PgBouncer (connection pooler) and the API server
-4. Runs database migrations
-
-When it finishes you'll see:
-
-```
-[remembr-init] Setup complete!
-[remembr-init]   API:    http://localhost:8000/api/v1
-```
-
-> **Subsequent starts** (after the first): just `docker compose up -d`.
-> The model is already cached in the `ollama_data` volume.
-
-## 4. Verify with Health Check
-
-```bash
-curl http://localhost:8000/api/v1/health
-```
-
-Expected response:
-
-```json
-{"success": true, "data": {"status": "ok", "environment": "local", "version": "0.2.0", "redis_status": "healthy"}, "request_id": "..."}
-```
-
-## 5. Services Running
-
-| Service | Port | Description |
-|---------|------|-------------|
-| **PostgreSQL** (pgvector) | 5432 | Long-term episodic memory storage |
-| **PgBouncer** | 6432 | Connection pooler (transaction mode) |
-| **Redis** | 6379 | Short-term memory cache & rate limiting |
-| **Ollama** | 11434 | Local embedding inference |
-| **Remembr Server** | 8000 | FastAPI REST API |
-
-## 6. Register Your First User and Get an API Key
-
-**Register:**
-
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "you@example.com",
-    "password": "your-secure-password",
-    "org_name": "My Org"
-  }'
-```
-
-**Login to get a JWT token:**
-
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "you@example.com",
-    "password": "your-secure-password"
-  }'
-```
-
-Save the `access_token` from the response.
-
-**Create an API key:**
-
-```bash
-curl -X POST http://localhost:8000/api/v1/api-keys \
-  -H "Authorization: Bearer <your-access-token>" \
-  -H "Content-Type: application/json" \
-  -d '{"name": "my-first-key", "scope": "agent"}'
-```
-
-Save the returned API key — you'll use it with the SDK.
-
-## 7. First Memory Store and Search
-
-**Install the Python SDK:**
-
-```bash
-pip install remembr
-```
-
-**Store and search a memory:**
-
-```python
-import asyncio
-from remembr import RemembrClient
-
-async def main():
-    client = RemembrClient(
-        api_key="your-api-key",
-        base_url="http://localhost:8000/api/v1"
-    )
-
-    # Create a session
-    session = await client.create_session(
-        metadata={"user": "demo", "context": "quickstart"}
-    )
-
-    # Store a memory
-    await client.store(
-        content="User prefers email notifications on Fridays",
-        role="user",
-        session_id=session.session_id,
-        tags=["preference", "notification"]
-    )
-
-    # Search memories
-    results = await client.search(
-        query="When should I send notifications?",
-        session_id=session.session_id,
-        limit=5,
-        mode="hybrid"
-    )
-
-    for memory in results.results:
-        print(f"[{memory.role}] {memory.content} (score: {memory.score:.3f})")
-
-    await client.aclose()
-
-asyncio.run(main())
-```
-
----
-
-## Using a Different Embedding Provider
-
-The default is Ollama (local). To switch providers, set `EMBEDDING_PROVIDER` in `.env`:
-
-```bash
-# Jina AI (cloud, high quality)
-EMBEDDING_PROVIDER=jina
-JINA_API_KEY=jina_...
-
-# OpenAI
-EMBEDDING_PROVIDER=openai
-OPENAI_API_KEY=sk-...
-
-# sentence-transformers (local, no GPU needed, no Ollama)
-EMBEDDING_PROVIDER=sentence_transformers
-```
-
-See [server/EMBEDDINGS.md](server/EMBEDDINGS.md) for the full provider guide.
-
----
-
-## Stopping Services
-
-```bash
-docker compose down
-```
-
-To also remove all data volumes (start fresh):
-
-```bash
-docker compose down -v
-```
-
----
-
-## Troubleshooting
-
-| Problem | Solution |
-|---------|----------|
-| **Health check fails** | `docker compose ps` — check all containers are running |
-| **Database connection error** | Wait 10–15s for PostgreSQL to initialize, then retry |
-| **Embedding errors (Ollama)** | Model may still be pulling. Check: `docker compose logs ollama-init` |
-| **Port conflicts** | Edit port mappings in `docker-compose.yml` |
-| **Slow first start** | Normal — Ollama downloads ~274 MB model on first run |
-
----
-
----
-
-## Idempotent Writes
-
-Add `Idempotency-Key` to any POST/PUT/PATCH so retries never create duplicates.
-The server caches the response for 24 hours and replays it verbatim on repeat requests.
-
-```python
-import uuid
-
-async with RemembrClient(api_key=API_KEY) as client:
-    idem_key = str(uuid.uuid4())          # generate once, store in your DB
-
-    # Safe to retry — only executes once
-    episode = await client.store(
-        "User confirmed subscription upgrade",
-        role="user",
-        idempotency_key=idem_key,
-    )
-```
-
-```bash
-curl -X POST "$BASE_URL/memory" \
-  -H "X-API-Key: $API_KEY" \
-  -H "Idempotency-Key: my-unique-op-001" \
-  -H "Content-Type: application/json" \
-  -d '{"role":"user","content":"User confirmed subscription upgrade"}'
-```
-
----
-
-## Data Export
-
-Export your full memory dataset as JSON or CSV — streamed without buffering:
-
-```python
-# JSON streaming (no memory spike for large exports)
-async with RemembrClient(api_key=API_KEY) as client:
-    async for episode in await client.export(format="json"):
-        print(episode["content"])
-
-# CSV download
-async with RemembrClient(api_key=API_KEY) as client:
-    csv_bytes = await client.export(format="csv")
-    with open("export.csv", "wb") as f:
-        f.write(csv_bytes)
-
-# Filtered export
-async with RemembrClient(api_key=API_KEY) as client:
-    from datetime import datetime, timezone
-    async for episode in await client.export(
-        format="json",
-        from_date=datetime(2026, 1, 1, tzinfo=timezone.utc),
-        session_id="<session-id>",
-    ):
-        print(episode)
-```
-
-```bash
-# Full JSON export
-curl "$BASE_URL/export" -H "X-API-Key: $API_KEY" --output export.json
-
-# CSV with date filter
-curl "$BASE_URL/export?format=csv&from_date=2026-01-01T00:00:00Z" \
-  -H "X-API-Key: $API_KEY" --output export.csv
-```
-
----
-
-## Next Steps
-
-- Read the [README](README.md) for full documentation
-- Explore the [API Reference](docs/api-reference.md)
-- Try [framework adapters](adapters/) for LangChain, CrewAI, and more
-- See [CONTRIBUTING.md](CONTRIBUTING.md) to get involved
+Volumes retain memory and the downloaded model. The default model is `nomic-embed-text` through local Ollama. No extra LLM or external inference key is required.

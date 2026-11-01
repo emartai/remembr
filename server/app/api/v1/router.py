@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Response
 from loguru import logger
 from redis.exceptions import RedisError
 
+from app import __version__
 from app.api.responses import StandardResponse, success
-from app.api.v1 import api_keys, auth, export, memory, webhooks
+from app.api.v1 import api_keys, auth, export, memory, projects, webhooks
 from app.config import get_settings
 from app.middleware.context import RequestContext, require_auth
 from app.middleware.rate_limit import limiter
@@ -16,6 +17,22 @@ router.include_router(api_keys.router)
 router.include_router(memory.router)
 router.include_router(export.router)
 router.include_router(webhooks.router)
+router.include_router(projects.router)
+
+
+@router.get("/ready", response_model=StandardResponse[dict])
+@limiter.exempt
+async def readiness_check(request: Request, response: Response):
+    """Check migrations, pgvector, Redis, a worker and real embedding inference."""
+    from app.services.readiness import get_readiness
+
+    checks = await get_readiness()
+    ready = all(value == "healthy" for value in checks.values())
+    response.status_code = 200 if ready else 503
+    return success(
+        {"status": "ready" if ready else "not_ready", "checks": checks},
+        request_id=request.state.request_id,
+    )
 
 
 @router.get("/health", response_model=StandardResponse[dict])
@@ -59,7 +76,7 @@ async def health_check(request: Request):
         {
             "status": "ok",
             "environment": settings.environment,
-            "version": "0.2.0",
+            "version": __version__,
             "redis_status": redis_status,
         },
         request_id=request.state.request_id,

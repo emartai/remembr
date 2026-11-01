@@ -112,6 +112,11 @@ class MemoryQueryEngine:
                 query=request.query,
                 limit=request.limit,
                 score_threshold=request.score_threshold,
+                tags=request.tags,
+                from_time=request.from_time,
+                to_time=request.to_time,
+                role=request.role,
+                session_id=uuid.UUID(request.session_id) if request.session_id else None,
             )
         elif request.search_mode == "keyword" and request.query:
             results = await self.episodic.search_keyword(
@@ -138,19 +143,15 @@ class MemoryQueryEngine:
                 weights=request.weights,
             )
         else:
-            if request.session_id:
-                episodes = await self.episodic.get_session_history(
-                    scope=scope,
-                    session_id=request.session_id,
-                    limit=max(request.limit * 2, request.limit),
-                )
-            else:
-                episodes = await self.episodic.search_by_time(
-                    scope=scope,
-                    from_time=request.from_time,
-                    to_time=request.to_time,
-                    limit=max(request.limit * 2, request.limit),
-                )
+            episodes = await self.episodic.list_filtered(
+                scope=scope,
+                session_id=request.session_id,
+                tags=request.tags,
+                role=request.role,
+                from_time=request.from_time,
+                to_time=request.to_time,
+                limit=request.limit,
+            )
 
             results = [
                 EpisodeSearchResult(episode=episode, similarity_score=0.0) for episode in episodes

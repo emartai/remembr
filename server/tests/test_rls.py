@@ -146,3 +146,36 @@ async def test_setting_is_transaction_scoped(db):
 
     current_org = await get_org_context(db)
     assert current_org is None or current_org == ""
+
+
+@pytest.mark.asyncio
+async def test_non_superuser_cannot_read_another_organizations_episodes(db):
+    """Exercise actual PostgreSQL RLS rather than a superuser's bypass privileges."""
+    from sqlalchemy import select
+
+    from app.models import Episode, Organization
+
+    organizations = [Organization(name="RLS first"), Organization(name="RLS second")]
+    db.add_all(organizations)
+    await db.flush()
+    episodes = [
+        Episode(org_id=org.id, role="user", content="private memory", tags=[], metadata_={})
+        for org in organizations
+    ]
+    db.add_all(episodes)
+    await db.flush()
+    episode_ids = [episode.id for episode in episodes]
+    # This role, its grants and fixture rows are rolled back together below.
+    role = f"remembr_rls_{uuid.uuid4().hex[:16]}"
+    await db.execute(text(f"CREATE ROLE {role} NOLOGIN NOSUPERUSER NOBYPASSRLS"))
+    await db.execute(text(f"GRANT USAGE ON SCHEMA public TO {role}"))
+    await db.execute(text(f"GRANT SELECT ON episodes TO {role}"))
+    try:
+        await db.execute(text(f"SET LOCAL ROLE {role}"))
+        for org, expected_id in zip(organizations, episode_ids, strict=True):
+            await set_org_context(db, org.id)
+            visible = await db.scalars(select(Episode.id).where(Episode.id.in_(episode_ids)))
+            assert list(visible) == [expected_id]
+    finally:
+        await db.execute(text("RESET ROLE"))
+        await db.rollback()

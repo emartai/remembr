@@ -1,6 +1,6 @@
 {
   "name": "@remembr/sdk",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Persistent memory infrastructure for AI agents",
   "author": "Emmanuel Nwanguma",
   "license": "MIT",
@@ -30,7 +30,7 @@
   "scripts": {
     "build": "tsc",
     "test": "tsc --noEmit && jest --coverage",
-    "lint": "tslint",
+    "lint": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

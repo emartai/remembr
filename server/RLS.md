@@ -99,15 +99,16 @@ from app.db.rls import set_org_context
 from app.db.session import AsyncSessionLocal
 from app.models import Episode
 
+
 async def get_episodes(org_id: uuid.UUID):
     async with AsyncSessionLocal() as db:
         # Set org context first
         await set_org_context(db, org_id)
-        
+
         # Query - RLS automatically filters by org_id
         result = await db.execute(select(Episode))
         episodes = result.scalars().all()
-        
+
         return episodes
 ```
 
@@ -137,17 +138,15 @@ async def create_episode(org_id: uuid.UUID, content: str):
 async def update_episode(org_id: uuid.UUID, episode_id: uuid.UUID, content: str):
     async with AsyncSessionLocal() as db:
         await set_org_context(db, org_id)
-        
+
         # Get episode (RLS ensures it belongs to org)
-        result = await db.execute(
-            select(Episode).where(Episode.id == episode_id)
-        )
+        result = await db.execute(select(Episode).where(Episode.id == episode_id))
         episode = result.scalar_one_or_none()
-        
+
         if episode:
             episode.content = content
             await db.commit()
-        
+
         return episode
 ```
 
@@ -157,18 +156,16 @@ async def update_episode(org_id: uuid.UUID, episode_id: uuid.UUID, content: str)
 async def delete_episode(org_id: uuid.UUID, episode_id: uuid.UUID):
     async with AsyncSessionLocal() as db:
         await set_org_context(db, org_id)
-        
+
         # Get episode (RLS ensures it belongs to org)
-        result = await db.execute(
-            select(Episode).where(Episode.id == episode_id)
-        )
+        result = await db.execute(select(Episode).where(Episode.id == episode_id))
         episode = result.scalar_one_or_none()
-        
+
         if episode:
             await db.delete(episode)
             await db.commit()
             return True
-        
+
         return False
 ```
 
@@ -195,9 +192,7 @@ Even with SQL injection, RLS prevents data leakage:
 malicious_input = "' OR org_id != org_id --"
 
 # Even if this gets into a query, RLS blocks it
-result = await db.execute(
-    text(f"SELECT * FROM episodes WHERE content = '{malicious_input}'")
-)
+result = await db.execute(text(f"SELECT * FROM episodes WHERE content = '{malicious_input}'"))
 # RLS ensures only current org's data is returned
 ```
 
@@ -210,6 +205,7 @@ If application code has a bug that forgets org_id filtering:
 async def get_all_episodes():  # WRONG!
     result = await db.execute(select(Episode))
     return result.scalars().all()
+
 
 # RLS still protects - only returns current org's episodes
 ```
@@ -303,8 +299,7 @@ print(f"Current org: {current_org}")
 ```python
 # Check if data exists for this org
 result = await db.execute(
-    text("SELECT COUNT(*) FROM episodes WHERE org_id = :org_id"),
-    {"org_id": org_id}
+    text("SELECT COUNT(*) FROM episodes WHERE org_id = :org_id"), {"org_id": org_id}
 )
 count = result.scalar()
 print(f"Episodes for org: {count}")
@@ -386,9 +381,7 @@ RLS is a safety net, not a replacement for application-level filtering:
 
 ```python
 # Good - explicit org_id filter + RLS
-result = await db.execute(
-    select(Episode).where(Episode.org_id == org_id)
-)
+result = await db.execute(select(Episode).where(Episode.org_id == org_id))
 
 # Acceptable - RLS provides safety net
 result = await db.execute(select(Episode))

@@ -160,6 +160,7 @@ from app.services.auth import get_current_user
 
 router = APIRouter()
 
+
 @router.get("/protected")
 async def protected_route(
     current_user: Annotated[User, Depends(get_current_user)],

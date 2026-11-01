@@ -6,11 +6,12 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Episode
 from app.services.scoping import MemoryScope
+from app.services.tag_filter import TagFilter, build_tag_filter_sql
 
 
 def _as_uuid(value: str | uuid.UUID | None) -> uuid.UUID | None:
@@ -82,6 +83,7 @@ async def list_episodes(
     to_time: datetime | None = None,
     limit: int = 50,
     offset: int = 0,
+    tag_filters: list[TagFilter] | None = None,
 ) -> list[Episode]:
     """List non-deleted episodes in scope with optional session/tag/role/time filtering."""
     query = select(Episode)
@@ -97,8 +99,11 @@ async def list_episodes(
         query = query.where(Episode.created_at >= from_time)
     if to_time:
         query = query.where(Episode.created_at <= to_time)
+    tag_sql, tag_params = build_tag_filter_sql(tag_filters or [], alias="episodes")
+    if tag_sql:
+        query = query.where(text(tag_sql).bindparams(**tag_params))
 
-    query = query.order_by(Episode.created_at.desc()).limit(limit).offset(offset)
+    query = query.order_by(Episode.created_at.desc(), Episode.id).limit(limit).offset(offset)
     result = await db.execute(query)
     return list(result.scalars().all())
 

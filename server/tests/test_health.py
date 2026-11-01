@@ -14,6 +14,7 @@ os.environ.setdefault("SECRET_KEY", "test-secret-key-for-health-tests")
 os.environ.setdefault("JINA_API_KEY", "test-jina-key")
 os.environ.setdefault("ENVIRONMENT", "local")
 
+from app import __version__
 from app.main import create_app
 
 
@@ -46,7 +47,7 @@ def test_health_check_response_format(client):
     assert "redis_status" in data
 
     assert data["status"] == "ok"
-    assert data["version"] == "0.2.0"
+    assert data["version"] == __version__
     assert data["redis_status"] in [
         "healthy",
         "unhealthy",

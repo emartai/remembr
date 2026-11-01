@@ -74,7 +74,7 @@ async def test_log_dispatches_celery_task(
     monkeypatch: pytest.MonkeyPatch,
 ):
     """log() should persist the episode and dispatch a Celery task."""
-    fake_db = object()
+    fake_db = AsyncMock()
     svc = EpisodicMemory(db=fake_db)
 
     fake_episode = type("E", (), {"id": uuid.uuid4(), "embedding_status": "pending"})()
@@ -84,6 +84,7 @@ async def test_log_dispatches_celery_task(
     dispatched = []
 
     def _capture_delay(episode_id):
+        fake_db.commit.assert_awaited_once()
         dispatched.append(episode_id)
 
     from app.tasks import embeddings as emb_tasks
@@ -95,6 +96,27 @@ async def test_log_dispatches_celery_task(
     assert episode is fake_episode
     mocked_log.assert_awaited_once()
     assert dispatched == [str(fake_episode.id)]
+
+
+@pytest.mark.asyncio
+async def test_dispatch_failure_keeps_memory_and_reports_failed_processing(scope, monkeypatch):
+    from app.tasks import embeddings as emb_tasks
+
+    db = AsyncMock()
+    episode = type("E", (), {"id": uuid.uuid4(), "embedding_status": "pending"})()
+    monkeypatch.setattr(
+        "app.services.episodic.episode_repo.log_episode", AsyncMock(return_value=episode)
+    )
+
+    def fail_dispatch(_episode_id):
+        db.commit.assert_awaited_once()
+        raise ConnectionError("broker unavailable")
+
+    monkeypatch.setattr(emb_tasks.generate_embedding_for_episode, "delay", fail_dispatch)
+    assert await EpisodicMemory(db).log(scope, "user", "retain this memory") is episode
+    assert episode.embedding_status == "failed"
+    assert "could not be queued" in episode.embedding_error
+    assert db.commit.await_count == 2
 
 
 @pytest.mark.asyncio
