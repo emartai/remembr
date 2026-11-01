@@ -9,6 +9,8 @@ from sqlalchemy import select
 
 from app.models.project_memory import ProjectMemory
 
+pytestmark = pytest.mark.integration
+
 
 @pytest_asyncio.fixture
 async def shared(client, db, monkeypatch):
