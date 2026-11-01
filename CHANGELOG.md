@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.1] - 2026-11-02
+
+### Added
+
+- Shared project memory spaces with separate revocable agent credentials, scoped grants and authenticated authorship.
+- Python and TypeScript project APIs and an optional stdio MCP bridge for agent memory sharing.
+- Corrections, revision lineage, expiry, idempotent writes and a browser memory explorer.
+- Cross-platform local setup, migration and installed-package verification instructions.
+
+### Fixed
+
+- Repeated synchronous Python SDK calls across event loops, semantic-search filters and worker readiness checks.
+- Explorer pagination, connection permissions, stale responses and mobile layouts.
+- Python package typing metadata and TypeScript package license inclusion.
+
+### Verification limits
+
+- Clean installation passed with native Ollama; the bundled Ollama image download remained unverified after network EOF failures.
+- See [verification](docs/verification.md) and [compatibility](docs/compatibility.md) for tested environments and scope. Earlier entries below are historical claims, not verification of this release.
+
 ## [1.0.0] - 2026-02-25
 
 ### 🎉 Production Release
