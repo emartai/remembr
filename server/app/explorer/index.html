@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Remembr · Memory explorer</title><link rel="stylesheet" href="/explorer/explorer.css">
+<script src="/explorer/explorer.js" defer></script></head>
+<body><header><span class="brand">remembr<span class="dot">●</span></span><span>Memory explorer</span><button id="disconnect" hidden>Disconnect</button></header>
+<main><section id="connection"><h1>Understand what your agents remember.</h1><p>Connect with your user access token to manage a project, or a separate agent credential to inspect its permitted memory.</p>
+<form id="connect-form"><label>Access token or space credential<input id="credential" type="password" required autocomplete="off" placeholder="User access token or rmsp_…"></label><button>Connect</button></form><p class="muted">Credentials stay in this page's memory. Reload or disconnect to clear them.</p>
+<details><summary>Sign in with your Remembr account</summary><form id="login-form"><label>Email<input id="email" type="email" required autocomplete="username"></label><label>Password<input id="password" type="password" required autocomplete="current-password"></label><button>Sign in</button></form></details></section>
+<p id="notice" role="status" aria-live="polite"></p>
+<section id="workspace" hidden><div class="heading"><div><p class="eyebrow">PROJECT MEMORY</p><h1>Your shared knowledge</h1></div><button id="refresh">Refresh</button></div>
+<div class="selectors"><label>Project<select id="project"></select></label><label>Memory space<select id="space"></select></label></div>
+<p id="permission-info" class="muted"></p>
+<details id="management"><summary>Project and agent access</summary><div class="forms">
+<form id="new-project"><label>New project<input id="project-name" required maxlength="160"></label><button>Create project</button></form>
+<form id="new-space"><label>New space in selected project<input id="space-name" required maxlength="160"></label><button>Create space</button></form>
+<form id="new-agent"><label>New agent name<input id="agent-name" required maxlength="160"></label><button>Create separate credential</button></form>
+<div><p id="new-credential" class="secret" hidden></p><p class="muted">Copy a new credential now; it is shown once. Grant access below.</p></div>
+<form id="grant"><label>Principal ID<input id="principal-id" required></label><label class="check"><input id="grant-read" type="checkbox">Read</label><label class="check"><input id="grant-write" type="checkbox">Write / correct</label><label class="check"><input id="grant-delete" type="checkbox">Delete</label><button>Save permissions</button><button id="revoke" type="button" class="danger">Revoke credential</button></form></div></details>
+<form id="search-form"><div class="search"><input id="query" placeholder="Search project knowledge…" aria-label="Search query" maxlength="2000"><select id="mode" aria-label="Search mode"><option value="hybrid">Hybrid</option><option value="semantic">Semantic</option><option value="keyword">Keyword</option></select><button>Search</button></div><div class="filters"><label class="check"><input id="history" type="checkbox">Include expired and superseded history (browse only)</label><label>Context characters<input id="budget" type="number" value="12000" min="1" max="64000"></label></div></form>
+<p id="search-info" class="muted" role="status" aria-live="polite"></p><div id="results" class="results" aria-busy="false"></div><button id="previous" hidden>Previous page</button><button id="more" hidden>Next page</button>
+<details id="editor"><summary>Save a memory or correction</summary><form id="save-form"><label>Memory<textarea id="content" required maxlength="32000" rows="5"></textarea></label><label>Source reference<input id="source" maxlength="2000" placeholder="Repository path, document reference or URL"></label><label>Corrects memory ID (optional)<input id="supersedes"></label><label>Expires at (optional, your local time)<input id="expires" type="datetime-local"></label><button>Save memory</button></form></details>
+</section></main><footer>Emart AI · Local-first agent memory</footer></body></html>

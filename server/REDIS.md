@@ -63,6 +63,7 @@ from fastapi import Depends
 from redis.asyncio import Redis
 from app.db.redis import get_redis
 
+
 @router.get("/example")
 async def example(redis: Redis = Depends(get_redis)):
     await redis.set("key", "value")
@@ -137,9 +138,9 @@ Pre-defined TTL values:
 
 ```python
 from app.services.cache import (
-    SESSION_TTL,      # 3600 seconds (1 hour)
-    SHORT_TERM_TTL,   # 1800 seconds (30 minutes)
-    LONG_TERM_TTL,    # 86400 seconds (24 hours)
+    SESSION_TTL,  # 3600 seconds (1 hour)
+    SHORT_TERM_TTL,  # 1800 seconds (30 minutes)
+    LONG_TERM_TTL,  # 86400 seconds (24 hours)
 )
 
 # Use in cache operations
@@ -182,14 +183,15 @@ await cache.delete(session_key)
 ```python
 from app.services.cache import make_key, SHORT_TERM_TTL
 
+
 async def get_user_with_cache(user_id: str):
     # Try cache first
     cache_key = make_key("user", user_id)
     cached = await cache.get(cache_key)
-    
+
     if cached:
         return cached
-    
+
     # Cache miss - query database
     user = await db.get(User, user_id)
     user_dict = {
@@ -197,10 +199,10 @@ async def get_user_with_cache(user_id: str):
         "email": user.email,
         "name": user.name,
     }
-    
+
     # Store in cache
     await cache.set(cache_key, user_dict, ttl_seconds=SHORT_TERM_TTL)
-    
+
     return user_dict
 ```
 
@@ -209,17 +211,18 @@ async def get_user_with_cache(user_id: str):
 ```python
 from app.services.cache import make_key
 
+
 async def check_rate_limit(user_id: str, limit: int = 100) -> bool:
     """Check if user is within rate limit."""
     key = make_key("ratelimit", user_id, "requests")
-    
+
     # Increment counter
     count = await cache.increment(key)
-    
+
     if count == 1:
         # First request - set TTL to 1 hour
         await cache.expire(key, 3600)
-    
+
     return count <= limit
 ```
 
@@ -228,10 +231,12 @@ async def check_rate_limit(user_id: str, limit: int = 100) -> bool:
 ```python
 from app.services.cache import make_key, SHORT_TERM_TTL
 
+
 # Store temporary processing results
 async def store_processing_result(task_id: str, result: dict):
     key = make_key("task", task_id, "result")
     await cache.set(key, result, ttl_seconds=SHORT_TERM_TTL)
+
 
 # Retrieve and delete
 async def get_and_clear_result(task_id: str):
@@ -494,21 +499,22 @@ except TypeError as e:
 import pytest
 from app.services.cache import CacheService, make_key
 
+
 @pytest.mark.asyncio
 async def test_cache_set_get(redis_client):
     cache = CacheService(redis_client)
-    
+
     key = make_key("test", "key")
     value = {"data": "test"}
-    
+
     # Set value
     success = await cache.set(key, value, ttl_seconds=60)
     assert success
-    
+
     # Get value
     result = await cache.get(key)
     assert result == value
-    
+
     # Clean up
     await cache.delete(key)
 ```

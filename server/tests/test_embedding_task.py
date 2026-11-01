@@ -57,6 +57,7 @@ async def test_do_generate_embedding_sets_ready_status():
     fake_episode.embedding_status = "pending"
     fake_episode.embedding_generated_at = None
     fake_episode.embedding_error = None
+    fake_episode.deleted_at = None
 
     fake_db = AsyncMock()
     fake_db.get.return_value = fake_episode
@@ -82,8 +83,8 @@ async def test_do_generate_embedding_sets_ready_status():
 
 
 @pytest.mark.asyncio
-async def test_do_generate_embedding_skips_missing_episode():
-    """When the episode no longer exists, no exception should be raised."""
+async def test_do_generate_embedding_retries_missing_episode():
+    """A missing row must be retried rather than silently losing a queued write."""
     fake_db = AsyncMock()
     fake_db.get.return_value = None
 
@@ -92,7 +93,8 @@ async def test_do_generate_embedding_skips_missing_episode():
     fake_session.__aexit__ = AsyncMock(return_value=False)
 
     with patch("app.tasks.embeddings.AsyncSessionLocal", MagicMock(return_value=fake_session)):
-        await _do_generate_embedding(str(uuid.uuid4()))  # should not raise
+        with pytest.raises(RuntimeError, match="not yet visible"):
+            await _do_generate_embedding(str(uuid.uuid4()))
 
 
 # ── _mark_failed ──────────────────────────────────────────────────────────────

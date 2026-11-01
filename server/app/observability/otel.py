@@ -23,9 +23,10 @@ from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, SimpleSpanProcessor
 from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 
+from app import __version__
 from app.config import get_settings
 
-APP_VERSION = "0.1.0"
+APP_VERSION = __version__
 
 
 @dataclass

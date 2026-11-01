@@ -71,13 +71,22 @@ PostgreSQL / pgvector       ← cosine similarity search via <=> operator
 ```python
 from app.services.embeddings import set_embedding_provider_override, EmbeddingProvider
 
+
 class FakeProvider(EmbeddingProvider):
     @property
-    def model(self): return "fake"
+    def model(self):
+        return "fake"
+
     @property
-    def dimensions(self): return 3
-    async def generate_embedding(self, text): return ([0.1, 0.2, 0.3], 3)
-    async def generate_embeddings_batch(self, texts): return [([0.1, 0.2, 0.3], 3)] * len(texts)
+    def dimensions(self):
+        return 3
+
+    async def generate_embedding(self, text):
+        return ([0.1, 0.2, 0.3], 3)
+
+    async def generate_embeddings_batch(self, texts):
+        return [([0.1, 0.2, 0.3], 3)] * len(texts)
+
 
 @pytest.fixture(autouse=True)
 def fake_embeddings():

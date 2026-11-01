@@ -41,7 +41,9 @@ async def _do_generate_embedding(episode_id: str) -> None:
     async with AsyncSessionLocal() as db:
         episode = await db.get(Episode, episode_id)
         if episode is None:
-            logger.warning("Skipping embedding: episode not found", episode_id=episode_id)
+            # Retry visibility races instead of silently leaving memory pending forever.
+            raise RuntimeError(f"Episode not yet visible: {episode_id}")
+        if episode.deleted_at is not None:
             return
 
         started_at = perf_counter()

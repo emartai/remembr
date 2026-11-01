@@ -8,6 +8,7 @@ from datetime import datetime
 from time import perf_counter
 from typing import Any
 
+from loguru import logger
 from sqlalchemy import ARRAY, DateTime, String, bindparam, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
@@ -100,7 +101,7 @@ class EpisodicMemory:
         session_id: str | uuid.UUID | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> Episode:
-        """Persist an episode and dispatch a Celery task to generate its embedding."""
+        """Commit an episode before queueing inference; report dispatch failure in its status."""
         episode = await episode_repo.log_episode(
             db=self.db,
             scope=scope,
@@ -113,8 +114,31 @@ class EpisodicMemory:
 
         from app.tasks.embeddings import generate_embedding_for_episode
 
-        generate_embedding_for_episode.delay(str(episode.id))
+        # A worker has its own connection and cannot see an uncommitted episode.
+        await self.db.commit()
+        try:
+            generate_embedding_for_episode.delay(str(episode.id))
+        except Exception:
+            from app.db.rls import set_org_context
+
+            # A committed write is still valid memory. Do not leave it pending
+            # forever or pretend a failed response rolled the stored episode back.
+            await set_org_context(self.db, _as_uuid(scope.org_id))
+            episode.embedding_status = "failed"
+            episode.embedding_error = (
+                "Embedding task could not be queued; check Redis connectivity."
+            )
+            await self.db.commit()
+            logger.warning("Embedding dispatch failed", episode_id=str(episode.id))
         return episode
+
+    async def list_filtered(
+        self,
+        scope: MemoryScope,
+        **filters: Any,
+    ) -> list[Episode]:
+        """Filter in storage before pagination, including queries without text."""
+        return await episode_repo.list_episodes(db=self.db, scope=scope, **filters)
 
     async def search_by_tags(
         self,
@@ -189,6 +213,12 @@ class EpisodicMemory:
         limit: int = 10,
         score_threshold: float = 0.7,
         tag_filters: list[TagFilter] | None = None,
+        tags: list[str] | None = None,
+        from_time: datetime | None = None,
+        to_time: datetime | None = None,
+        role: str | None = None,
+        session_id: uuid.UUID | None = None,
+        offset: int = 0,
     ) -> list[EpisodeSearchResult]:
         """Run semantic search against episode embeddings within scope."""
         tracer = get_tracer("app.services.episodic")
@@ -230,10 +260,25 @@ class EpisodicMemory:
               AND e.agent_id IS NOT DISTINCT FROM :agent_id
               AND e.deleted_at IS NULL
               AND emb.deleted_at IS NULL
+              AND emb.org_id = :org_id
+              AND (CAST(:tags AS VARCHAR[]) IS NULL OR e.tags && CAST(:tags AS VARCHAR[]))
+              AND (CAST(:from_time AS TIMESTAMPTZ) IS NULL
+                   OR e.created_at >= CAST(:from_time AS TIMESTAMPTZ))
+              AND (CAST(:to_time AS TIMESTAMPTZ) IS NULL
+                   OR e.created_at <= CAST(:to_time AS TIMESTAMPTZ))
+              AND (CAST(:role AS VARCHAR) IS NULL OR e.role = CAST(:role AS VARCHAR))
+              AND (CAST(:session_id AS UUID) IS NULL
+                   OR e.session_id = CAST(:session_id AS UUID))
               AND 1 - (emb.vector <=> '{vector_literal}'::vector) >= :score_threshold{tf_clause}
-            ORDER BY similarity_score DESC
-            LIMIT :limit
+            ORDER BY similarity_score DESC, e.created_at DESC, e.id
+            LIMIT :limit OFFSET :offset
             """
+            ).bindparams(
+                bindparam("tags", type_=ARRAY(String())),
+                bindparam("from_time", type_=DateTime(timezone=True)),
+                bindparam("to_time", type_=DateTime(timezone=True)),
+                bindparam("role", type_=String()),
+                bindparam("session_id", type_=UUID(as_uuid=True)),
             )
             result = await self.db.execute(
                 sql,
@@ -244,6 +289,12 @@ class EpisodicMemory:
                     "agent_id": _as_uuid(scope.agent_id),
                     "score_threshold": score_threshold,
                     "limit": limit,
+                    "offset": offset,
+                    "tags": tags or None,
+                    "from_time": from_time,
+                    "to_time": to_time,
+                    "role": role,
+                    "session_id": session_id,
                     **tf_params,
                 },
             )
@@ -267,6 +318,7 @@ class EpisodicMemory:
         limit: int = 10,
         score_threshold: float = 0.65,
         weights: SearchWeights | None = None,
+        offset: int = 0,
     ) -> list[EpisodeSearchResult]:
         """Run one-roundtrip semantic + keyword + recency search using a CTE."""
         tracer = get_tracer("app.services.episodic")
@@ -341,8 +393,6 @@ class EpisodicMemory:
                 WHERE emb.org_id = :org_id
                   AND emb.deleted_at IS NULL
                   AND 1 - (emb.vector <=> '{vector_literal}'::vector) >= :score_threshold
-                ORDER BY similarity_score DESC
-                LIMIT 50
             ),
             keyword_candidates AS (
                 SELECT
@@ -352,8 +402,6 @@ class EpisodicMemory:
                 CROSS JOIN keyword_query kq
                 WHERE kq.ts_query <> ''::tsquery
                   AND fe.search_vector @@ kq.ts_query
-                ORDER BY bm25_score DESC
-                LIMIT 50
             ),
             candidate_ids AS (
                 SELECT episode_id FROM semantic_candidates
@@ -391,8 +439,8 @@ class EpisodicMemory:
             JOIN filtered_episodes fe ON fe.id = ci.episode_id
             LEFT JOIN semantic_candidates sc ON sc.episode_id = fe.id
             LEFT JOIN keyword_candidates kc ON kc.episode_id = fe.id
-            ORDER BY similarity_score DESC, fe.created_at DESC
-            LIMIT :limit
+            ORDER BY similarity_score DESC, fe.created_at DESC, fe.id
+            LIMIT :limit OFFSET :offset
             """
             ).bindparams(
                 bindparam("tags", type_=ARRAY(String())),
@@ -409,13 +457,14 @@ class EpisodicMemory:
                     "user_id": _as_uuid(scope.user_id),
                     "agent_id": _as_uuid(scope.agent_id),
                     "score_threshold": score_threshold,
-                    "tags": tags,
+                    "tags": tags or None,
                     "from_time": from_time,
                     "to_time": to_time,
                     "role": role,
                     "session_id": session_id,
                     "limit": limit,
                     "query": query,
+                    "offset": offset,
                     "semantic_weight": resolved_weights.semantic,
                     "keyword_weight": resolved_weights.keyword,
                     "recency_weight": resolved_weights.recency,
@@ -440,6 +489,7 @@ class EpisodicMemory:
         role: str | None = None,
         session_id: uuid.UUID | None = None,
         limit: int = 10,
+        offset: int = 0,
     ) -> list[EpisodeSearchResult]:
         """Run full-text keyword search against episode content within scope."""
         tracer = get_tracer("app.services.episodic")
@@ -499,8 +549,8 @@ class EpisodicMemory:
               )
               AND kq.ts_query <> ''::tsquery
               AND e.search_vector @@ kq.ts_query{tf_clause}
-            ORDER BY similarity_score DESC, e.created_at DESC
-            LIMIT :limit
+            ORDER BY similarity_score DESC, e.created_at DESC, e.id
+            LIMIT :limit OFFSET :offset
             """
             ).bindparams(
                 bindparam("tags", type_=ARRAY(String())),
@@ -517,7 +567,8 @@ class EpisodicMemory:
                     "user_id": _as_uuid(scope.user_id),
                     "agent_id": _as_uuid(scope.agent_id),
                     "query": query,
-                    "tags": tags,
+                    "offset": offset,
+                    "tags": tags or None,
                     "from_time": from_time,
                     "to_time": to_time,
                     "role": role,

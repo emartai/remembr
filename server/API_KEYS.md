@@ -143,8 +143,7 @@ api_key = "rmbr_a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6"
 
 async with httpx.AsyncClient() as client:
     response = await client.get(
-        "https://api.remembr.ai/api/v1/some-endpoint",
-        headers={"X-API-Key": api_key}
+        "https://api.remembr.ai/api/v1/some-endpoint", headers={"X-API-Key": api_key}
     )
 ```
 
@@ -171,6 +170,7 @@ from app.services.api_keys import get_api_key_auth
 
 router = APIRouter()
 
+
 @router.get("/agent-endpoint")
 async def agent_endpoint(
     auth: Annotated[dict, Depends(get_api_key_auth)],
@@ -178,7 +178,7 @@ async def agent_endpoint(
     # auth contains: {org_id, user_id, agent_id, key_id}
     org_id = auth["org_id"]
     agent_id = auth["agent_id"]
-    
+
     return {"message": f"Authenticated as org {org_id}"}
 ```
 
@@ -195,6 +195,7 @@ from app.services.api_keys import get_api_key_auth
 
 router = APIRouter()
 
+
 async def get_auth_context(
     jwt_user: Annotated[User | None, Depends(get_current_user)] = None,
     api_key_auth: Annotated[dict | None, Depends(get_api_key_auth)] = None,
@@ -206,6 +207,7 @@ async def get_auth_context(
         return api_key_auth
     else:
         raise HTTPException(status_code=401, detail="Authentication required")
+
 
 @router.get("/flexible-endpoint")
 async def flexible_endpoint(

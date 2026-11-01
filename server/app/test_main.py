@@ -7,6 +7,7 @@ Run with: pytest server/app/test_main.py
 import pytest
 from fastapi.testclient import TestClient
 
+from app import __version__
 from app.main import create_app
 
 
@@ -26,7 +27,7 @@ def test_health_check(client):
 
     assert data["status"] == "ok"
     assert "environment" in data
-    assert data["version"] == "0.1.0"
+    assert data["version"] == __version__
 
 
 def test_request_id_header(client):

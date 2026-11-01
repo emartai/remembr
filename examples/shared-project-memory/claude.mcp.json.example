@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "remembr": {
+      "command": "C:/absolute/path/to/venv/Scripts/python.exe",
+      "args": ["-m", "remembr.mcp"],
+      "env": {
+        "REMEMBR_URL": "${REMEMBR_URL}",
+        "REMEMBR_SPACE_ID": "${REMEMBR_SPACE_ID}",
+        "REMEMBR_API_KEY": "${REMEMBR_API_KEY}"
+      }
+    }
+  }
+}

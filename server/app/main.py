@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from loguru import logger
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app import __version__
 from app.api.responses import error
 from app.api.v1.router import router as v1_router
 from app.config import get_settings
@@ -77,7 +78,7 @@ async def lifespan(app: FastAPI):
             redis_client=get_redis_client(),
             celery_app=celery_app,
         )
-        logger.info("Application startup", version="0.2.0", redis="connected")
+        logger.info("Application startup", version=__version__, redis="connected")
     except Exception as e:
         logger.error("Failed to initialize Redis", error=str(e))
         # Continue without Redis - endpoints will handle gracefully
@@ -105,7 +106,7 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title="Remembr API",
         description="Persistent memory infrastructure for AI agents",
-        version="0.2.0",
+        version=__version__,
         lifespan=lifespan,
         docs_url="/docs" if not settings.is_production else None,
         redoc_url="/redoc" if not settings.is_production else None,
@@ -281,6 +282,9 @@ def create_app() -> FastAPI:
 
     # Mount versioned API router
     app.include_router(v1_router, prefix=settings.api_v1_prefix)
+    from app.explorer.router import router as explorer_router
+
+    app.include_router(explorer_router)
 
     # Admin UI — dev/staging only, never production
     if not settings.is_production:

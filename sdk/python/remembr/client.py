@@ -34,6 +34,7 @@ from .models import (
     WebhookDelivery,
     WebhookSecret,
 )
+from .projects import ProjectMemoryAPI
 
 
 class _RetryableServerError(ServerError):
@@ -145,7 +146,13 @@ class RemembrClient:
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self._client: httpx.AsyncClient | None = None
+        # The client this SDK created itself, and the event loop its pooled
+        # connections belong to. A client assigned to ``_client`` from outside
+        # (for example one with a test transport) is never replaced.
+        self._owned_client: httpx.AsyncClient | None = None
+        self._client_loop: asyncio.AbstractEventLoop | None = None
         self.webhooks = WebhookAPI(self)
+        self.projects = ProjectMemoryAPI(self)
 
     async def __aenter__(self) -> RemembrClient:
         await self._ensure_client()
@@ -155,6 +162,19 @@ class RemembrClient:
         await self.aclose()
 
     async def _ensure_client(self) -> httpx.AsyncClient:
+        # An httpx.AsyncClient's pooled connections are bound to the event loop
+        # they were opened on. Sync callers (``request()``, the CLI, framework
+        # adapters) run each call in a fresh loop via ``asyncio.run()``, so a
+        # client cached from an earlier, now closed, loop must not be reused:
+        # doing so raised ``RuntimeError: Event loop is closed`` on every
+        # second call. Within one loop the client and its pool are reused.
+        loop = asyncio.get_running_loop()
+        if (
+            self._client is not None
+            and self._client is self._owned_client
+            and self._client_loop is not loop
+        ):
+            self._discard_stale_client()
         if self._client is None:
             self._client = httpx.AsyncClient(
                 base_url=self.base_url,
@@ -165,13 +185,42 @@ class RemembrClient:
                     "Content-Type": "application/json",
                 },
             )
+            self._owned_client = self._client
+            self._client_loop = loop
         return self._client
+
+    def _discard_stale_client(self) -> None:
+        """Drop the SDK-created client because it belongs to another event loop.
+
+        Its connections cannot be closed gracefully from this loop. If that loop
+        is still running elsewhere, schedule ``aclose()`` there; otherwise the
+        sockets are released when the client is garbage collected.
+        """
+        stale, stale_loop = self._client, self._client_loop
+        self._client = None
+        self._owned_client = None
+        self._client_loop = None
+        if stale is None or stale_loop is None or not stale_loop.is_running():
+            return
+        try:
+            asyncio.run_coroutine_threadsafe(stale.aclose(), stale_loop)
+        except RuntimeError:  # pragma: no cover - loop closed in between
+            pass
 
     async def aclose(self) -> None:
         """Close underlying HTTP resources for the async client."""
-        if self._client is not None:
-            await self._client.aclose()
-            self._client = None
+        if self._client is None:
+            return
+        if (
+            self._client is self._owned_client
+            and self._client_loop is not asyncio.get_running_loop()
+        ):
+            self._discard_stale_client()
+            return
+        await self._client.aclose()
+        self._client = None
+        self._owned_client = None
+        self._client_loop = None
 
     async def arequest(
         self,
@@ -281,15 +330,17 @@ class RemembrClient:
         Returns:
             The deserialized response payload (typically the API `data` object).
         """
-        return asyncio.run(
-            self.arequest(
-                method,
-                path,
-                params=params,
-                json=json,
-                idempotency_key=idempotency_key,
-            )
-        )
+        async def run_and_close() -> dict[str, Any]:
+            try:
+                return await self.arequest(
+                    method, path, params=params, json=json, idempotency_key=idempotency_key
+                )
+            finally:
+                # Close SDK-owned sockets before asyncio.run closes their loop.
+                if self._client is not None and self._client is self._owned_client:
+                    await self.aclose()
+
+        return asyncio.run(run_and_close())
 
     async def create_session(
         self,

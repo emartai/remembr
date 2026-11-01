@@ -1,13 +1,14 @@
 [build-system]
-requires = ["setuptools>=68.0", "wheel"]
+requires = ["setuptools>=77.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "remembr"
-version = "0.2.0"
+version = "0.2.1"
 description = "Persistent memory infrastructure for AI agents"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.11"
 authors = [
     {name = "Emmanuel Nwanguma", email = "nwangumaemmanuel29@gmail.com"},
@@ -38,11 +39,12 @@ Documentation = "https://emartai.github.io/remembr"
 "Bug Tracker" = "https://github.com/emartai/remembr/issues"
 
 [project.optional-dependencies]
+mcp = ["mcp>=1.26,<2"]
 dev = [
     "pytest>=7.4.0",
     "pytest-asyncio>=0.21.0",
     "respx>=0.21.0",
-    "ruff>=0.3.0",
+    "ruff==0.15.22",
 ]
 
 [tool.ruff]
@@ -55,9 +57,13 @@ ignore = []
 
 [project.scripts]
 remembr = "remembr.cli.main:app"
+remembr-mcp = "remembr.mcp:main"
 
 [tool.setuptools.packages.find]
 include = ["remembr*"]
+
+[tool.setuptools.package-data]
+remembr = ["py.typed"]
 
 [tool.pytest.ini_options]
 markers = ["integration: marks tests as integration tests"]

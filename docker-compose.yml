@@ -1,14 +1,13 @@
 # =============================================================================
-# Remembr — Docker Compose (Self-Hosted, Zero-Dependency)
+# Remembr — Docker Compose (local embeddings by default)
 # =============================================================================
 # First-time setup:  bash scripts/docker-init.sh
-# Day-to-day:        docker compose up -d
-# Stop:              docker compose down
-# Nuke volumes:      docker compose down -v
+# Day-to-day:        docker compose --profile ollama up -d
+# Stop:              docker compose --profile ollama down
 #
 # Embedding providers:
 #   ollama (default) — bundled, no API key needed
-#   sentence_transformers — local, no external service needed
+#   sentence_transformers — local, downloads its model on first use
 #   jina / openai — set EMBEDDING_PROVIDER + API key in .env
 # =============================================================================
 
@@ -19,14 +18,14 @@ services:
   # ---------------------------------------------------------------------------
   postgres:
     image: pgvector/pgvector:pg16
-    container_name: remembr-postgres
+    container_name: ${COMPOSE_PROJECT_NAME:-remembr}-postgres
     restart: unless-stopped
     environment:
       POSTGRES_USER: remembr
       POSTGRES_PASSWORD: remembr
       POSTGRES_DB: remembr
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -41,7 +40,7 @@ services:
   # ---------------------------------------------------------------------------
   pgbouncer:
     image: edoburu/pgbouncer:latest
-    container_name: remembr-pgbouncer
+    container_name: ${COMPOSE_PROJECT_NAME:-remembr}-pgbouncer
     restart: unless-stopped
     environment:
       DB_HOST: postgres
@@ -56,7 +55,7 @@ services:
       AUTH_TYPE: scram-sha-256
       SERVER_TLS_SSLMODE: disable
     ports:
-      - "6432:6432"
+      - "127.0.0.1:${PGBOUNCER_PORT:-6432}:6432"
     depends_on:
       postgres:
         condition: service_healthy
@@ -66,10 +65,13 @@ services:
   # ---------------------------------------------------------------------------
   redis:
     image: redis:7-alpine
-    container_name: remembr-redis
+    container_name: ${COMPOSE_PROJECT_NAME:-remembr}-redis
     restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    volumes:
+      - redis_data:/data
     ports:
-      - "6379:6379"
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -79,19 +81,19 @@ services:
 
   # ---------------------------------------------------------------------------
   # Ollama — Local embedding inference (no API key required)
-  # Included in default profile so docker compose up starts it automatically.
-  # Set EMBEDDING_PROVIDER=sentence_transformers in .env to skip it.
+  # Enable with --profile ollama. Setup scripts do this for the local default.
   # ---------------------------------------------------------------------------
   ollama:
+    profiles: ["ollama"]
     image: ollama/ollama:latest
-    container_name: remembr-ollama
+    container_name: ${COMPOSE_PROJECT_NAME:-remembr}-ollama
     restart: unless-stopped
     ports:
-      - "11434:11434"
+      - "127.0.0.1:${OLLAMA_PORT:-11434}:11434"
     volumes:
       - ollama_data:/root/.ollama
     healthcheck:
-      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      test: ["CMD", "ollama", "list"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -102,14 +104,30 @@ services:
   # Re-running is safe — ollama pull is idempotent.
   # ---------------------------------------------------------------------------
   ollama-init:
+    profiles: ["ollama"]
     image: ollama/ollama:latest
-    container_name: remembr-ollama-init
+    container_name: ${COMPOSE_PROJECT_NAME:-remembr}-ollama-init
     restart: "no"
     environment:
       OLLAMA_HOST: http://ollama:11434
-    entrypoint: ["ollama", "pull", "nomic-embed-text"]
+    entrypoint: ["ollama", "pull", "${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}"]
     depends_on:
       ollama:
+        condition: service_healthy
+
+  # Complete schema upgrades before any API, worker or scheduler starts.
+  migrate:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    restart: "no"
+    command: alembic upgrade head
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://remembr:remembr@postgres:5432/remembr
+    depends_on:
+      postgres:
         condition: service_healthy
 
   # ---------------------------------------------------------------------------
@@ -119,7 +137,7 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
-    container_name: remembr-worker
+    container_name: ${COMPOSE_PROJECT_NAME:-remembr}-worker
     restart: unless-stopped
     command: celery -A app.celery_app worker --loglevel=info --concurrency=2
     env_file:
@@ -131,6 +149,8 @@ services:
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
       OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       pgbouncer:
         condition: service_started
       redis:
@@ -150,7 +170,7 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
-    container_name: remembr-worker-beat
+    container_name: ${COMPOSE_PROJECT_NAME:-remembr}-worker-beat
     restart: unless-stopped
     command: celery -A app.celery_app beat --loglevel=info
     env_file:
@@ -159,6 +179,8 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://remembr:remembr@pgbouncer:6432/remembr}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       redis:
         condition: service_healthy
 
@@ -169,10 +191,11 @@ services:
     build:
       context: ./server
       dockerfile: Dockerfile
-    container_name: remembr-server
+    container_name: ${COMPOSE_PROJECT_NAME:-remembr}-server
     restart: unless-stopped
     ports:
-      - "8000:8000"
+      - "127.0.0.1:${REMEMBR_PORT:-8000}:8000"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     env_file:
       - .env
     environment:
@@ -182,12 +205,14 @@ services:
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
       OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       pgbouncer:
         condition: service_started
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=5).close()"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -195,6 +220,8 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+  redis_data:
     driver: local
   ollama_data:
     driver: local

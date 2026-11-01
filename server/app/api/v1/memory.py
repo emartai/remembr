@@ -356,94 +356,26 @@ class MemoryQueryEngine:
         results: list[MemorySearchResult] = []
 
         if request.query:
-            has_filters = any(
-                [
-                    request.tags,
-                    request.tag_filters,
-                    request.role,
-                    request.from_time,
-                    request.to_time,
-                    request.session_id,
-                ]
-            )
-            if has_filters:
-                try:
-                    if request.search_mode == "keyword":
-                        semantic = await self.episodic.search_keyword(
-                            scope=scope,
-                            query=request.query,
-                            tags=request.tags,
-                            tag_filters=request.tag_filters,
-                            from_time=request.from_time,
-                            to_time=request.to_time,
-                            role=request.role,
-                            session_id=request.session_id,
-                            limit=request.limit,
-                        )
-                    elif request.search_mode == "semantic":
-                        semantic = await self.episodic.search_semantic(
-                            scope=scope,
-                            query=request.query,
-                            tag_filters=request.tag_filters,
-                            limit=request.limit,
-                        )
-                    else:
-                        semantic = await self.episodic.search_hybrid(
-                            scope=scope,
-                            query=request.query,
-                            tags=request.tags,
-                            tag_filters=request.tag_filters,
-                            from_time=request.from_time,
-                            to_time=request.to_time,
-                            role=request.role,
-                            session_id=request.session_id,
-                            limit=request.limit,
-                            weights=request.weights,
-                        )
-                except Exception:
-                    semantic = await self.episodic.search_semantic(
-                        scope=scope,
-                        query=request.query,
-                        tag_filters=request.tag_filters,
-                        limit=request.limit,
-                    )
-                    _filtered = []
-                    for item in semantic:
-                        episode = item.episode
-                        if request.session_id and episode.session_id != request.session_id:
-                            continue
-                        if request.role and episode.role != request.role:
-                            continue
-                        if request.tags and not set(request.tags).intersection(
-                            set(episode.tags or [])
-                        ):
-                            continue
-                        if request.from_time and episode.created_at < request.from_time:
-                            continue
-                        if request.to_time and episode.created_at > request.to_time:
-                            continue
-                        _filtered.append(item)
-                    semantic = _filtered
+            # Every mode applies the same filters before ranking and pagination.
+            # Failures propagate rather than silently changing search semantics.
+            filters = {
+                "scope": scope,
+                "query": request.query,
+                "tags": request.tags,
+                "tag_filters": request.tag_filters,
+                "from_time": request.from_time,
+                "to_time": request.to_time,
+                "role": request.role,
+                "session_id": request.session_id,
+                "limit": request.limit,
+                "offset": request.offset,
+            }
+            if request.search_mode == "keyword":
+                semantic = await self.episodic.search_keyword(**filters)
+            elif request.search_mode == "semantic":
+                semantic = await self.episodic.search_semantic(**filters)
             else:
-                if request.search_mode == "keyword":
-                    semantic = await self.episodic.search_keyword(
-                        scope=scope,
-                        query=request.query,
-                        limit=request.limit,
-                    )
-                elif request.search_mode == "semantic":
-                    semantic = await self.episodic.search_semantic(
-                        scope=scope,
-                        query=request.query,
-                        limit=request.limit,
-                    )
-                else:
-                    semantic = await self.episodic.search_hybrid(
-                        scope=scope,
-                        query=request.query,
-                        limit=request.limit,
-                        weights=request.weights,
-                    )
+                semantic = await self.episodic.search_hybrid(**filters, weights=request.weights)
 
             for item in semantic:
                 episode = item.episode
@@ -458,29 +390,18 @@ class MemoryQueryEngine:
                     )
                 )
         else:
-            episodes = await self.episodic.search_by_time(
+            episodes = await self.episodic.list_filtered(
                 scope=scope,
+                session_id=request.session_id,
+                role=request.role,
+                tags=request.tags,
+                tag_filters=request.tag_filters,
                 from_time=request.from_time,
                 to_time=request.to_time,
-                limit=request.limit + request.offset,
+                limit=request.limit,
+                offset=request.offset,
             )
-            filtered = episodes
-            if request.session_id:
-                filtered = [ep for ep in filtered if ep.session_id == request.session_id]
-            if request.role:
-                filtered = [ep for ep in filtered if ep.role == request.role]
-            if request.tags:
-                filtered = [
-                    ep for ep in filtered if set(request.tags).intersection(set(ep.tags or []))
-                ]
-            if request.tag_filters:
-                filtered = [
-                    ep
-                    for ep in filtered
-                    if _matches_tag_filters(ep.tags or [], request.tag_filters)
-                ]
-
-            for ep in filtered[request.offset : request.offset + request.limit]:
+            for ep in episodes:
                 results.append(
                     MemorySearchResult(
                         episode_id=str(ep.id),

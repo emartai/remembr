@@ -51,6 +51,7 @@ Returns `RequestContext | None`. Use when authentication is optional.
 ```python
 from app.middleware.context import get_request_context, RequestContext
 
+
 @router.get("/optional")
 async def optional_endpoint(
     ctx: RequestContext | None = Depends(get_request_context),
@@ -66,6 +67,7 @@ Returns `RequestContext` or raises 401. Use when authentication is required.
 
 ```python
 from app.middleware.context import require_auth, RequestContext
+
 
 @router.get("/protected")
 async def protected_endpoint(
@@ -84,6 +86,7 @@ Access context from anywhere in the call stack without passing it.
 
 ```python
 from app.middleware.context import get_current_context
+
 
 def helper_function():
     ctx = get_current_context()
@@ -144,19 +147,21 @@ The middleware in `main.py` automatically adds context to all log messages:
 @app.middleware("http")
 async def add_request_context(request: Request, call_next):
     request_id = str(uuid.uuid4())
-    
+
     log_context = {"request_id": request_id}
-    
+
     # After authentication
     ctx = get_current_context()
     if ctx:
-        log_context.update({
-            "org_id": str(ctx.org_id),
-            "user_id": str(ctx.user_id) if ctx.user_id else None,
-            "agent_id": str(ctx.agent_id) if ctx.agent_id else None,
-            "auth_method": ctx.auth_method,
-        })
-    
+        log_context.update(
+            {
+                "org_id": str(ctx.org_id),
+                "user_id": str(ctx.user_id) if ctx.user_id else None,
+                "agent_id": str(ctx.agent_id) if ctx.agent_id else None,
+                "auth_method": ctx.auth_method,
+            }
+        )
+
     with logger.contextualize(**log_context):
         # All logs in this request include context
         logger.info("Request completed")
@@ -183,6 +188,7 @@ from app.middleware.context import RequestContext, require_auth
 
 router = APIRouter()
 
+
 @router.get("/memories")
 async def list_memories(
     ctx: Annotated[RequestContext, Depends(require_auth)],
@@ -190,10 +196,10 @@ async def list_memories(
 ):
     # ctx contains org_id, user_id, agent_id
     # db session already has org context set for RLS
-    
+
     result = await db.execute(select(Memory))
     memories = result.scalars().all()
-    
+
     return {"memories": memories}
 ```
 
@@ -214,15 +220,16 @@ async def public_endpoint(
 ```python
 from app.middleware.context import get_current_context
 
+
 async def process_data(db: AsyncSession):
     # Access context without passing it
     ctx = get_current_context()
-    
+
     if not ctx:
         raise ValueError("No authentication context")
-    
+
     logger.info("Processing data", org_id=str(ctx.org_id))
-    
+
     # Database queries are automatically scoped to ctx.org_id
     result = await db.execute(select(Data))
     return result.scalars().all()

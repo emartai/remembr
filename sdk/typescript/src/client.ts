@@ -1,5 +1,6 @@
 import { AuthenticationError, ServerError } from './errors';
 import { RemembrHttp } from './http';
+import { ProjectMemoryAPI } from './projects';
 import {
   CheckpointInfo,
   CreateWebhookParams,
@@ -107,6 +108,7 @@ class WebhookAPI {
 export class RemembrClient {
   private readonly http: RemembrHttp;
   readonly webhooks: WebhookAPI;
+  readonly projects: ProjectMemoryAPI;
 
   constructor(config: RemembrConfig = {}) {
     const apiKey = config.apiKey ?? this.getApiKeyFromEnv();
@@ -118,6 +120,7 @@ export class RemembrClient {
 
     this.http = new RemembrHttp({ ...config, apiKey });
     this.webhooks = new WebhookAPI(this.http, this.requireNonEmpty.bind(this));
+    this.projects = new ProjectMemoryAPI(this.http);
   }
 
   /**

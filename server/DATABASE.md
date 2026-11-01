@@ -214,9 +214,7 @@ from app.models import Episode
 
 # Get episodes for an organization
 result = await db.execute(
-    select(Episode)
-    .where(Episode.org_id == org_id)
-    .order_by(Episode.created_at.desc())
+    select(Episode).where(Episode.org_id == org_id).order_by(Episode.created_at.desc())
 )
 episodes = result.scalars().all()
 ```
@@ -227,16 +225,10 @@ Use array operators:
 
 ```python
 # Episodes with specific tag
-result = await db.execute(
-    select(Episode)
-    .where(Episode.tags.contains(['important']))
-)
+result = await db.execute(select(Episode).where(Episode.tags.contains(["important"])))
 
 # Episodes with any of multiple tags
-result = await db.execute(
-    select(Episode)
-    .where(Episode.tags.overlap(['urgent', 'important']))
-)
+result = await db.execute(select(Episode).where(Episode.tags.overlap(["urgent", "important"])))
 ```
 
 ### JSONB Queries
@@ -245,10 +237,7 @@ Query nested JSON:
 
 ```python
 # Query metadata field
-result = await db.execute(
-    select(Session)
-    .where(Session.metadata['key'].astext == 'value')
-)
+result = await db.execute(select(Session).where(Session.metadata["key"].astext == "value"))
 ```
 
 ### Temporal Queries
@@ -260,10 +249,9 @@ from datetime import datetime
 
 now = datetime.utcnow()
 result = await db.execute(
-    select(MemoryFact)
-    .where(
+    select(MemoryFact).where(
         MemoryFact.valid_from <= now,
-        (MemoryFact.valid_until == None) | (MemoryFact.valid_until > now)
+        (MemoryFact.valid_until == None) | (MemoryFact.valid_until > now),
     )
 )
 ```
