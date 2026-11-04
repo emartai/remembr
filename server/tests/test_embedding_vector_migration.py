@@ -5,11 +5,10 @@ import uuid
 from pathlib import Path
 
 import pytest
-from sqlalchemy import text
-from sqlalchemy.exc import DBAPIError
-
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
+from sqlalchemy import text
+from sqlalchemy.exc import DBAPIError
 
 pytestmark = pytest.mark.integration
 
