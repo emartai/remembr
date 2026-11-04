@@ -8,6 +8,12 @@ const sidebars: SidebarsConfig = {
       label: 'Quickstart',
       collapsed: false,
       items: [
+        'getting-started',
+        'local-setup',
+        'shared-project-memory',
+        'agent-connections',
+        'compatibility',
+        'verification',
         'quickstart/langchain',
         'quickstart/langgraph',
         'quickstart/crewai',

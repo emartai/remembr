@@ -97,7 +97,7 @@ A socket-access or Docker named-pipe permission error from a restricted coding e
 
 On 1 November 2026, a copy of the current unreleased source was built with no copied `.env`, installed SDK dependencies or generated SDK outputs. A separate Compose project applied migrations 001–009 to new PostgreSQL/Redis volumes. Its API/worker images came from the canonical Dockerfile; dependency and tokenizer layers were built successfully and then shared by the remaining services. The verified inference path used native Windows Ollama with an initially empty model directory and a fresh `nomic-embed-text` download. The default bundled Ollama image download failed with premature EOF on that network, so it is not counted as verified.
 
-Fresh consumer environments installed the Python 0.2.1 wheel with MCP, the Python source distribution without MCP, and the npm 0.2.1 archive. Installed SDK imports resolved from those environments rather than the source checkout. Live Python sync/async, TypeScript CommonJS/ESM, all four installed MCP tools, and the quickstart smoke passed. See the company workspace record `openpeople/workspace/research/remembr-clean-install-2026-11-01/REPORT.md` for artifact hashes, environment versions and limits. These candidates have not been published.
+Fresh consumer environments installed the Python 0.2.1 wheel with MCP, the Python source distribution without MCP, and the npm 0.2.1 archive. Installed SDK imports resolved from those environments rather than the source checkout. Live Python sync/async, TypeScript CommonJS/ESM, all four installed MCP tools, and the quickstart smoke passed. See the company workspace record `openpeople/workspace/research/remembr-clean-install-2026-11-01/REPORT.md` for artifact hashes, environment versions and limits. Python 0.2.1 is now published on PyPI; npm 0.2.1 publication remains pending. The tested server source is tagged v0.2.1.
 
 The public [verification record](verification.md) summarizes the completed checks and their limits.
 
@@ -106,3 +106,12 @@ The public [verification record](verification.md) summarizes the completed check
 Run Python SDK tests from `sdk/python`, TypeScript build/tests from `sdk/typescript`, and server tests from `server`, using the commands in `AGENTS.md`. Server integration tests require a separate, disposable PostgreSQL database with pgvector; fixtures create and drop tables. Never point `TEST_DATABASE_URL` at your working memory database.
 
 The release record should distinguish unit tests, package installation checks and a real Docker/Ollama smoke run. Passing one does not establish the others.
+
+
+## Default Docker acceptance — 4 November 2026
+
+The [clean Ubuntu runner acceptance](https://github.com/emartai/remembr/actions/runs/41885511938) passed using canonical `docker-compose.yml`, empty volumes, a fresh `ollama/ollama:latest` image (Ollama 0.40.14) and a downloaded `nomic-embed-text` model. Setup reached readiness and migrations 001–010 completed. The private-memory smoke passed queued embeddings, exact recall in all three modes, tenant isolation and deletion. The installed PyPI SDK 0.2.1 executed the actual shared-memory walkthrough, including registration/login, authenticated authorship and recall after API/worker recreation. The runner's disposable containers and volumes were removed afterward.
+
+This run discovered a retained 1024-dimensional HNSW index left behind by the earlier column-widening migration. Migration 010 removes it without deleting memories or vectors, allowing the default 768-dimensional model and other dimensions to be stored. Private vector retrieval uses exact search after this change; large-data ANN performance is not established. The correction is in the current source, not the original v0.2.1 server tag. Earlier native-install checks did not establish that the untouched 001–009 migration path worked for default-model writes.
+
+The Windows download retry still ended with premature EOF, so this establishes clean Linux installation rather than a completed bundled-Ollama installation on that laptop. See [local setup](local-setup.md) for repeatable commands.

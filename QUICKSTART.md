@@ -1,5 +1,7 @@
 # Remembr local quickstart
 
+For the complete account → agent → first shared-memory walkthrough, start with [Start using Remembr](docs/getting-started.md). Python 0.2.1 is published; npm 0.2.1 publication is pending. A server is required in addition to the SDK.
+
 Run these commands from a source checkout with Python 3.11+, Docker Compose v2 and a running Linux container engine:
 
 ```sh
@@ -22,19 +24,24 @@ Read [Local setup and release checks](docs/local-setup.md) for startup order, co
 
 ## Use an SDK
 
-Install from this checkout when testing unreleased changes:
+Install the published Python SDK into your application's virtual environment:
 
 ```sh
-python -m pip install ./sdk/python
+python -m pip install "remembr==0.2.1"
 # Include the optional MCP bridge when connecting MCP-capable agents:
-python -m pip install './sdk/python[mcp]'
+python -m pip install 'remembr[mcp]==0.2.1'
+```
+
+For TypeScript shared spaces, build the 0.2.1 source while npm publication is pending. From the repository root:
+
+```sh
 cd sdk/typescript
 npm ci
 npm run build
 npm pack
 ```
 
-The npm command creates a local package archive; install it into your application with `npm install /path/to/remembr-sdk-0.2.1.tgz`. These commands do not publish packages.
+The npm command creates a local package archive; install it into your application with `npm install /path/to/remembr-sdk-0.2.1.tgz`. npm 0.2.0 does not contain the shared-project APIs. For Python development changes, use `python -m pip install './sdk/python[mcp]'` from the checkout.
 
 Register through `POST /api/v1/auth/register` with `email`, `password` and `org_name`. Use the returned access token as a bearer token for `POST /api/v1/api-keys` with a `name`. Supply the resulting API key to the SDK. The [smoke test](scripts/smoke_test.py) contains an executable example of this sequence without printing credentials.
 
@@ -44,7 +51,7 @@ The key flow above is for private/session memory. For shared project memory, cre
 
 ## Native Ollama alternative
 
-For an existing native Ollama installation, start its service and wait for its local `/api/tags` endpoint to respond before pulling `nomic-embed-text`. In `.env`, set `OLLAMA_BASE_URL=http://host.docker.internal:11434` and `OLLAMA_EMBEDDING_MODEL=nomic-embed-text`, then run `python scripts/local_setup.py`. Setup recognizes the external service and skips the bundled container bootstrap while still checking real inference. This path was clean-install tested with a separate native process and newly downloaded model; the bundled image download remains unverified on the test network. See [local setup](docs/local-setup.md) for isolation and network notes.
+For an existing native Ollama installation, start its service and wait for its local `/api/tags` endpoint to respond before pulling `nomic-embed-text`. In `.env`, set `OLLAMA_BASE_URL=http://host.docker.internal:11434` and `OLLAMA_EMBEDDING_MODEL=nomic-embed-text`, then run `python scripts/local_setup.py`. Setup recognizes the external service and skips the bundled container bootstrap while still checking real inference. This path was clean-install tested with a separate native process and newly downloaded model. The bundled Docker path subsequently passed on a fresh Ubuntu runner with migration 010; the Windows image download still encountered network EOF failures. See [local setup](docs/local-setup.md) for isolation and network notes.
 
 ## Stop and restart
 

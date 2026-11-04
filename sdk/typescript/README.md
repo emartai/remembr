@@ -5,8 +5,16 @@
 ## Install
 
 ```bash
-npm install @remembr/sdk
+# From a Remembr 0.2.1 source checkout:
+cd sdk/typescript
+npm ci
+npm run build
+npm pack
+# In your application directory:
+npm install /absolute/path/to/remembr-sdk-0.2.1.tgz
 ```
+
+The 0.2.1 npm publication is pending. The published 0.2.0 package supports private/session memory, but does not include `client.projects`. Follow [getting started](https://github.com/emartai/remembr/blob/main/docs/getting-started.md) to start a server, create an account and issue credentials. For shared spaces use a separately granted `rmsp_` credential and `client.projects`; the example below uses a legacy `rmbr_` private-memory key.
 
 ## Quick Start
 
@@ -24,12 +32,26 @@ async function main() {
     context: 'support'
   });
 
-  await client.store({
+  const episode = await client.store({
     content: 'User prefers dark mode interface',
     role: 'user',
     sessionId: session.session_id,
     tags: ['preference', 'ui']
   });
+
+  const deadline = Date.now() + 120_000;
+  while (true) {
+    const response = await fetch(
+      `http://localhost:8000/api/v1/memory/${episode.episode_id}/status`,
+      { headers: { 'X-API-Key': process.env.REMEMBR_API_KEY! } }
+    );
+    if (!response.ok) throw new Error(`Status check failed: ${response.status}`);
+    const { data } = await response.json();
+    if (data.embedding_status === 'ready') break;
+    if (data.embedding_status === 'failed') throw new Error('Embedding failed');
+    if (Date.now() >= deadline) throw new Error('Memory processing timed out');
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  }
 
   const results = await client.search({
     query: 'What are the user UI preferences?',

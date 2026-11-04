@@ -36,6 +36,12 @@ markdown_extensions:
 nav:
   - Home: index.md
   - Quickstart:
+      - Start Here: getting-started.md
+      - Local Setup: local-setup.md
+      - Shared Project Memory: shared-project-memory.md
+      - Agent Connections: agent-connections.md
+      - Compatibility: compatibility.md
+      - Verification: verification.md
       - LangChain: quickstart/langchain.md
       - LangGraph: quickstart/langgraph.md
       - CrewAI: quickstart/crewai.md

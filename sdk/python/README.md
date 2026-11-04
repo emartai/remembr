@@ -5,10 +5,12 @@
 ## Install
 
 ```bash
-pip install remembr
+python -m pip install "remembr==0.2.1"
+# Optional MCP bridge:
+python -m pip install "remembr[mcp]==0.2.1"
 ```
 
-`EMBEDDING_PROVIDER=sentence_transformers` is the default for bare installs, so you do not need a `JINA_API_KEY` just to get started locally.
+The SDK connects to a running Remembr server; it does not install the server or embedding model. Follow the [account and first-agent walkthrough](https://github.com/emartai/remembr/blob/main/docs/getting-started.md). Use a separate `rmsp_` credential per agent with `client.projects` for shared spaces, or a legacy `rmbr_` key for the session/private methods below. The Docker stack uses local Ollama by default and needs no external inference key.
 
 ## Quick Start
 
@@ -27,12 +29,22 @@ async def main() -> None:
             metadata={"user": "demo", "context": "support"}
         )
 
-        await client.store(
+        episode = await client.store(
             content="User prefers Friday billing summaries.",
             role="user",
             session_id=session.session_id,
             tags=["kind:preference", "topic:billing"],
         )
+
+        for _ in range(60):
+            status = await client.arequest("GET", f"/memory/{episode.episode_id}/status")
+            if status["embedding_status"] == "ready":
+                break
+            if status["embedding_status"] == "failed":
+                raise RuntimeError("Embedding failed; inspect the worker logs")
+            await asyncio.sleep(2)
+        else:
+            raise TimeoutError("Memory processing timed out")
 
         results = await client.search(
             query="When should billing summaries be sent?",
@@ -54,11 +66,8 @@ asyncio.run(main())
 ```bash
 git clone https://github.com/emartai/remembr.git
 cd remembr
-cp .env.example .env
-python -c "import secrets; print(secrets.token_hex(32))"
-# paste the generated value into SECRET_KEY in .env
-bash scripts/docker-init.sh
-curl http://localhost:8000/api/v1/health
+python scripts/local_setup.py
+python scripts/smoke_test.py
 ```
 
 The Docker bootstrap flow works without Jina. For a plain Python install outside Docker, the default embedding backend is `sentence_transformers`.
