@@ -15,7 +15,7 @@ Follow [Start using Remembr](getting-started.md) for prerequisites, account crea
 ## Start the local server
 
 ```bash
-git clone --branch v0.2.1 https://github.com/emartai/remembr.git
+git clone https://github.com/emartai/remembr.git
 cd remembr
 python scripts/local_setup.py
 python scripts/smoke_test.py

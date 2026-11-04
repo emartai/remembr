@@ -29,6 +29,8 @@ See [Verified environment](docs/compatibility.md) for tested SDK/framework versi
 
 Version 0.2.1 is [released on GitHub](https://github.com/emartai/remembr/releases/tag/v0.2.1) and [published on PyPI](https://pypi.org/project/remembr/0.2.1/). The npm 0.2.1 publication is pending; npm 0.2.0 does not include the new project APIs. Build the TypeScript package from source to use shared spaces today. Remembr Cloud is planned, not yet available.
 
+Use the current server source for migration 010, which fixes a legacy vector-index constraint affecting fresh local-model installations. The earlier v0.2.1 server tag does not include that fix; the published Python SDK remains 0.2.1.
+
 Follow [Start using Remembr](docs/getting-started.md) to create your account, choose private or shared memory, connect an agent and retrieve its first memory.
 
 ## Shared project memory

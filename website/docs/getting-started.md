@@ -2,12 +2,14 @@
 
 Remembr 0.2.1 is released on GitHub and PyPI. The TypeScript 0.2.1 source is available, but its npm publication is pending. Remembr currently runs on your own machine or server; a hosted Remembr Cloud service is planned and is not yet available.
 
+Use the current server source, which includes migration 010 fixing fresh local-model installs. That fix is not included in the earlier v0.2.1 server tag; the published Python SDK 0.2.1 works with the corrected server.
+
 ## 1. Start the memory server
 
 You need Python 3.11+, Docker Compose v2, a running Linux container engine and internet access for the first image/model downloads. Installing the SDK alone does not start the server.
 
 ```sh
-git clone --branch v0.2.1 https://github.com/emartai/remembr.git
+git clone https://github.com/emartai/remembr.git
 cd remembr
 python scripts/local_setup.py
 python scripts/smoke_test.py

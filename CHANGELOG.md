@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+- Complete public account-to-agent onboarding and distinguish the published Python package from pending npm publication.
+- Verify the canonical bundled-Ollama stack on a clean runner, including the published SDK example and restart recall.
+- Add migration 010 to remove a stale 1024-dimensional HNSW index that rejected the default 768-dimensional model. Stored data is retained; retrieval uses exact vector search.
+
 ## [0.2.1] - 2026-11-02
 
 ### Added

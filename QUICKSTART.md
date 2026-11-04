@@ -51,7 +51,7 @@ The key flow above is for private/session memory. For shared project memory, cre
 
 ## Native Ollama alternative
 
-For an existing native Ollama installation, start its service and wait for its local `/api/tags` endpoint to respond before pulling `nomic-embed-text`. In `.env`, set `OLLAMA_BASE_URL=http://host.docker.internal:11434` and `OLLAMA_EMBEDDING_MODEL=nomic-embed-text`, then run `python scripts/local_setup.py`. Setup recognizes the external service and skips the bundled container bootstrap while still checking real inference. This path was clean-install tested with a separate native process and newly downloaded model; the bundled image download remains unverified on the test network. See [local setup](docs/local-setup.md) for isolation and network notes.
+For an existing native Ollama installation, start its service and wait for its local `/api/tags` endpoint to respond before pulling `nomic-embed-text`. In `.env`, set `OLLAMA_BASE_URL=http://host.docker.internal:11434` and `OLLAMA_EMBEDDING_MODEL=nomic-embed-text`, then run `python scripts/local_setup.py`. Setup recognizes the external service and skips the bundled container bootstrap while still checking real inference. This path was clean-install tested with a separate native process and newly downloaded model. The bundled Docker path subsequently passed on a fresh Ubuntu runner with migration 010; the Windows image download still encountered network EOF failures. See [local setup](docs/local-setup.md) for isolation and network notes.
 
 ## Stop and restart
 

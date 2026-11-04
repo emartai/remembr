@@ -106,3 +106,12 @@ The public [verification record](verification.md) summarizes the completed check
 Run Python SDK tests from `sdk/python`, TypeScript build/tests from `sdk/typescript`, and server tests from `server`, using the commands in `AGENTS.md`. Server integration tests require a separate, disposable PostgreSQL database with pgvector; fixtures create and drop tables. Never point `TEST_DATABASE_URL` at your working memory database.
 
 The release record should distinguish unit tests, package installation checks and a real Docker/Ollama smoke run. Passing one does not establish the others.
+
+
+## Default Docker acceptance — 4 November 2026
+
+The [clean Ubuntu runner acceptance](https://github.com/emartai/remembr/actions/runs/41885511938) passed using canonical `docker-compose.yml`, empty volumes, a fresh `ollama/ollama:latest` image (Ollama 0.40.14) and a downloaded `nomic-embed-text` model. Setup reached readiness and migrations 001–010 completed. The private-memory smoke passed queued embeddings, exact recall in all three modes, tenant isolation and deletion. The installed PyPI SDK 0.2.1 executed the actual shared-memory walkthrough, including registration/login, authenticated authorship and recall after API/worker recreation. The runner's disposable containers and volumes were removed afterward.
+
+This run discovered a retained 1024-dimensional HNSW index left behind by the earlier column-widening migration. Migration 010 removes it without deleting memories or vectors, allowing the default 768-dimensional model and other dimensions to be stored. Private vector retrieval uses exact search after this change; large-data ANN performance is not established. The correction is in the current source, not the original v0.2.1 server tag. Earlier native-install checks did not establish that the untouched 001–009 migration path worked for default-model writes.
+
+The Windows download retry still ended with premature EOF, so this establishes clean Linux installation rather than a completed bundled-Ollama installation on that laptop. See [local setup](local-setup.md) for repeatable commands.
