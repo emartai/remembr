@@ -23,18 +23,18 @@ All paths below start with `/api/v1/projects`. Responses use the existing `{data
 
 | Method/path | Purpose |
 |---|---|
-| POST / | Create project: `{name}` |
-| GET / | List owned/permitted projects (up to 100) |
-| POST /principals | Issue separate credential: `{name}`; secret returned once |
-| DELETE /principals/{principal_id} | Revoke credential |
-| POST /{project_id}/spaces | Create persistent space: `{name}` |
-| GET /{project_id}/spaces | List permitted spaces (up to 100) |
-| PUT /spaces/{space_id}/grants/{principal_id} | Replace `{can_read, can_write, can_delete}`; omitted permissions become false |
-| POST /spaces/{space_id}/memories | Store or correct |
-| POST /spaces/{space_id}/search | Browse/search permitted memories |
-| GET /spaces/{space_id}/memories/{id} | Inspect memory and lineage |
-| GET /spaces/{space_id}/memories/{id}/status | Processing and lifecycle state |
-| DELETE /spaces/{space_id}/memories/{id} | Remove content/vector; retain revision tombstone |
+| `POST /` | Create project: `{name}` |
+| `GET /` | List owned/permitted projects (up to 100) |
+| `POST /principals` | Issue separate credential: `{name}`; secret returned once |
+| `DELETE /principals/{principal_id}` | Revoke credential |
+| `POST /{project_id}/spaces` | Create persistent space: `{name}` |
+| `GET /{project_id}/spaces` | List permitted spaces (up to 100) |
+| `PUT /spaces/{space_id}/grants/{principal_id}` | Replace `{can_read, can_write, can_delete}`; omitted permissions become false |
+| `POST /spaces/{space_id}/memories` | Store or correct |
+| `POST /spaces/{space_id}/search` | Browse/search permitted memories |
+| `GET /spaces/{space_id}/memories/{id}` | Inspect memory and lineage |
+| `GET /spaces/{space_id}/memories/{id}/status` | Processing and lifecycle state |
+| `DELETE /spaces/{space_id}/memories/{id}` | Remove content/vector; retain revision tombstone |
 
 Unknown and unauthorized spaces return the same 404. Invalid/revoked credentials return 401. A credential cannot discover ungranted spaces, search them or fetch their processing status.
 
