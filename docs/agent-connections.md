@@ -4,10 +4,10 @@ Create a shared space and separate principals first; see [shared project memory]
 
 ## Install the stdio bridge
 
-From the repository root, in a Python 3.11+ virtual environment:
+In a Python 3.11+ virtual environment, install the published bridge:
 
 ```powershell
-python -m pip install -e './sdk/python[mcp]'
+python -m pip install 'remembr[mcp]==0.2.1'
 $env:REMEMBR_URL = 'http://localhost:8000'
 $env:REMEMBR_SPACE_ID = '<space UUID>'
 $env:REMEMBR_API_KEY = '<this agent connection’s rmsp_ credential>'

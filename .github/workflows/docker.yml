@@ -4,71 +4,56 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  COMPOSE_PROJECT_NAME: remembr_ci_default
 
 jobs:
   smoke-test-docker:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Create CI environment file
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install the documented default stack
+        run: python scripts/local_setup.py --timeout 600
+
+      - name: Verify private memory and tenant isolation
+        run: python scripts/smoke_test.py --timeout 180
+
+      - name: Install the published Python SDK
+        run: python -m pip install remembr==0.2.1
+
+      - name: Verify the onboarding example and restart persistence
+        run: python scripts/verify_shared_quickstart.py --recreate
+
+      - name: Record runtime versions and migrations
         run: |
-          cp .env.example .env
-          {
-            echo "SECRET_KEY=test-secret-key"
-            echo "EMBEDDING_PROVIDER=sentence_transformers"
-          } >> .env
-
-      - name: Build server image
-        run: docker compose -f docker-compose.test.yml build server
-
-      - name: Start containers
-        run: docker compose -f docker-compose.test.yml up -d postgres redis pgbouncer
-
-      - name: Wait for dependencies
-        run: |
-          echo "Waiting for postgres..."
-          for i in $(seq 1 30); do
-            if docker compose -f docker-compose.test.yml exec -T postgres pg_isready -U remembr; then
-              break
-            fi
-            sleep 2
-          done
-
-      - name: Build and start server
-        run: docker compose -f docker-compose.test.yml up -d server
-
-      - name: Wait for server and capture immediate logs
-        run: |
-          sleep 15
-          echo "=== SERVER LOGS ==="
-          docker compose -f docker-compose.test.yml logs server
-          echo "=== CONTAINER STATUS ==="
-          docker compose -f docker-compose.test.yml ps -a
-
-      - name: Check server health
-        run: |
-          docker compose -f docker-compose.test.yml logs server
-          curl -f http://localhost:8000/api/v1/health
-
-      - name: Run smoke test
-        run: bash scripts/smoke-test.sh
-        env:
-          SMOKE_TEST_URL: http://localhost:8000
+          docker compose --profile ollama images
+          docker compose exec -T ollama ollama --version
+          docker compose exec -T ollama ollama list
+          docker compose exec -T server alembic current
+          curl --fail http://localhost:8000/api/v1/ready
 
       - name: Capture logs on failure
         if: failure()
         run: |
-          docker compose -f docker-compose.test.yml logs server || true
-          docker compose -f docker-compose.test.yml ps -a || true
+          docker compose --profile ollama ps -a
+          docker compose logs --tail 100 migrate server worker ollama
 
       - name: Tear down
         if: always()
-        run: docker compose -f docker-compose.test.yml down -v --remove-orphans
+        run: docker compose --profile ollama down --volumes --remove-orphans

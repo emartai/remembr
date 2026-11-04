@@ -25,20 +25,29 @@ See [QUICKSTART.md](QUICKSTART.md) for the full self-hosted walkthrough.
 
 See [Verified environment](docs/compatibility.md) for tested SDK/framework versions and the scope of local verification.
 
-## Shared project memory (local development)
+## Release status
+
+Version 0.2.1 is [released on GitHub](https://github.com/emartai/remembr/releases/tag/v0.2.1) and [published on PyPI](https://pypi.org/project/remembr/0.2.1/). The npm 0.2.1 publication is pending; npm 0.2.0 does not include the new project APIs. Build the TypeScript package from source to use shared spaces today. Remembr Cloud is planned, not yet available.
+
+Follow [Start using Remembr](docs/getting-started.md) to create your account, choose private or shared memory, connect an agent and retrieve its first memory.
+
+## Shared project memory
 
 Separate agent credentials can share explicitly granted project spaces. Existing private episodes
 stay private. See [shared project memory](docs/shared-project-memory.md) for permissions, authorship,
 corrections, expiry and retrieval budgets, and [agent connections](docs/agent-connections.md) for the
 local MCP bridge and LangGraph/Claude Code/Codex setup. Open `/explorer` on your running server to
-browse and manage permitted memory. These additions are in the local source and are not yet published.
+browse and manage permitted memory. These additions are included in the 0.2.1 server source and Python SDK.
 
 ## Install The SDKs
 
 ```bash
-pip install remembr
-npm install @remembr/sdk
+python -m pip install "remembr==0.2.1"
+# For MCP clients:
+python -m pip install "remembr[mcp]==0.2.1"
 ```
+
+For TypeScript, use the source-package instructions in [getting started](docs/getting-started.md#5-connect-an-mcp-client-or-typescript-app) until npm 0.2.1 is published.
 
 ## Python Example
 

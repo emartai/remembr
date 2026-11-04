@@ -1,5 +1,7 @@
 # Shared project memory
 
+New users should follow [Start using Remembr](getting-started.md) for registration, credentials and the first SDK workflow. The server and Python project APIs are released in 0.2.1; TypeScript 0.2.1 is available from source while npm publication is pending.
+
 Remembr's project API is separate from legacy private episodes. An upgrade creates empty project tables; it never copies private memories, adds grants to old credentials, or automatically shares an organization.
 
 ## Set up a project
@@ -73,7 +75,7 @@ Queue publication failure retains the raw memory with failed processing. There i
 
 ## SDKs
 
-Python from the repository:
+Python SDK 0.2.1 (`python -m pip install "remembr==0.2.1"`):
 
 ```python
 from remembr import RemembrClient
