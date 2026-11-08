@@ -15,6 +15,17 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  test-benchmark-integrity:
+    name: test-benchmark-integrity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check label isolation and local-provider defaults
+        run: python -m unittest discover -s tests -p test_memory_benchmark.py -v
+
   test-server:
     name: test-server (${{ matrix.os }})
     runs-on: ${{ matrix.os }}

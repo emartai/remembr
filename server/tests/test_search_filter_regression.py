@@ -104,7 +104,7 @@ async def test_real_storage_filters_before_limit_and_offset(db, mode):
     await db.flush()
     now = datetime.now(UTC)
 
-    async def add(**overrides):
+    async def add(embedding_model="test", embedding_vector=None, **overrides):
         values = dict(
             org_id=org.id,
             session_id=session.id,
@@ -123,9 +123,9 @@ async def test_real_storage_filters_before_limit_and_offset(db, mode):
                 org_id=episode.org_id,
                 episode_id=episode.id,
                 content=episode.content,
-                model="test",
-                dimensions=3,
-                vector=[1.0, 0.0, 0.0],
+                model=embedding_model,
+                dimensions=len(embedding_vector or [1.0, 0.0, 0.0]),
+                vector=embedding_vector or [1.0, 0.0, 0.0],
             )
         )
         await db.flush()
@@ -133,6 +133,11 @@ async def test_real_storage_filters_before_limit_and_offset(db, mode):
 
     first = await add(created_at=now - timedelta(hours=1, minutes=30))
     second = await add()
+    # Neither a different embedding scheme nor a different dimensionality may
+    # participate in cosine scoring, even when all tenant filters match.
+    if mode in {"semantic", "hybrid"}:
+        await add(embedding_model="other-scheme", content="unrelated source")
+        await add(embedding_vector=[1.0, 0.0], content="unrelated source")
     # Each distractor violates exactly one filter or deletion/tenant boundary.
     await add(session_id=other_session.id)
     await add(role="user")
@@ -145,7 +150,8 @@ async def test_real_storage_filters_before_limit_and_offset(db, mode):
     await db.execute(text("UPDATE episodes SET search_vector = to_tsvector('english', content)"))
     await db.commit()
     provider = AsyncMock()
-    provider.generate_embedding.return_value = ([1.0, 0.0, 0.0], 3)
+    provider.model = "test"
+    provider.generate_query_embedding.return_value = ([1.0, 0.0, 0.0], 3)
     set_embedding_provider_override(provider)
     try:
         engine = MemoryQueryEngine(EpisodicMemory(db))

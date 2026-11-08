@@ -499,10 +499,11 @@ async def search_memory(
             score = keyword
         else:
             from app.services.embeddings import get_embedding_provider
+            from app.services.embeddings.base import embed_query
 
             provider = get_embedding_provider()
             try:
-                vector, dimensions = await provider.generate_embedding(payload.query)
+                vector, dimensions = await embed_query(provider, payload.query)
             except Exception as exc:
                 raise HTTPException(
                     503, "Embedding provider unavailable; use keyword search"

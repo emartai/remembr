@@ -57,6 +57,7 @@ def _create_provider() -> EmbeddingProvider:
         return OllamaEmbeddingProvider(
             base_url=getattr(settings, "ollama_base_url", "http://localhost:11434"),
             model=getattr(settings, "ollama_embedding_model", "nomic-embed-text"),
+            task_mode=getattr(settings, "ollama_task_mode", "legacy"),
         )
 
     if provider_name == "openai":

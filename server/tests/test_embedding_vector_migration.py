@@ -36,7 +36,10 @@ async def test_fixed_index_migration_preserves_vectors_and_allows_local_models(d
 
     await insert(1, 1024)
     original = await db.scalar(text("SELECT vector::text FROM embeddings WHERE id = 1"))
-    with pytest.raises(DBAPIError, match="expected 1024 dimensions"):
+    # pgvector versions report this index mismatch using either wording.
+    with pytest.raises(
+        DBAPIError, match="expected 1024 dimensions|different vector dimensions 768 and 1024"
+    ):
         async with db.begin_nested():
             await insert(2, 768)
 

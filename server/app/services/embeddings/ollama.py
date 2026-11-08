@@ -15,23 +15,37 @@ class OllamaEmbeddingProvider(EmbeddingProvider):
         self,
         base_url: str = "http://localhost:11434",
         model: str = "nomic-embed-text",
+        task_mode: str = "legacy",
     ) -> None:
+        if task_mode not in {"legacy", "nomic_search"}:
+            raise ValueError("Ollama task mode must be legacy or nomic_search")
         self._base_url = base_url.rstrip("/")
         self._model = model
+        self._task_mode = task_mode
 
     @property
     def model(self) -> str:
-        return self._model
+        # Version the vector space: prefixed and historical raw vectors must
+        # never be compared as if they were the same embedding configuration.
+        return self._model if self._task_mode == "legacy" else self._model + "|nomic-search-v1"
 
     @property
     def dimensions(self) -> int | None:
         return None
 
     async def generate_embedding(self, text: str) -> tuple[list[float], int]:
+        prompt = "search_document: " + text if self._task_mode == "nomic_search" else text
+        return await self._embed(prompt)
+
+    async def generate_query_embedding(self, text: str) -> tuple[list[float], int]:
+        prompt = "search_query: " + text if self._task_mode == "nomic_search" else text
+        return await self._embed(prompt)
+
+    async def _embed(self, prompt: str) -> tuple[list[float], int]:
         async with httpx.AsyncClient(timeout=60.0) as client:
             response = await client.post(
                 f"{self._base_url}/api/embeddings",
-                json={"model": self._model, "prompt": text},
+                json={"model": self._model, "prompt": prompt},
             )
             if response.status_code != 200:
                 raise ValueError(f"Ollama error {response.status_code}: {response.text}")
