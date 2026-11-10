@@ -411,7 +411,7 @@ def main():
     parser.add_argument("--ranking-work-dir", type=Path)
     parser.add_argument("--data", type=Path)
     parser.add_argument("--reader-model", default="qwen3:1.7b")
-    parser.add_argument("--judge-model", default="qwen2.5:7b")
+    parser.add_argument("--judge-model", default="qwen3:8b")
     args = parser.parse_args()
     work = state_paths(args.work_dir)
     http = Http("http://127.0.0.1:11434", interval=0, timeout=180)

@@ -12,7 +12,7 @@ from benchmarks.locomo import Http, read_json, state_paths, write_json
 
 EMBEDDING_MODEL = "nomic-embed-text:v1.5"
 READER_MODEL = "qwen3:1.7b"
-JUDGE_MODEL = "qwen2.5:7b"
+JUDGE_MODEL = "qwen3:8b"
 
 
 def command(*args):
@@ -53,6 +53,7 @@ def export(work):
         report["judge_calibration"] = {
             "attempted": len(controls),
             "passed": sum(r["passed"] for r in controls),
+            "controls": controls,
         }
         calibration_config = work / "answers/judge-controls-config.json"
         if calibration_config.exists():

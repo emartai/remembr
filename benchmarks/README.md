@@ -125,7 +125,7 @@ After confirmation, `python -m benchmarks.local_answer_pilot prepare --work-dir
 <pilot-dir> --ranking-work-dir <ranking-dir> --data <pinned-locomo10.json>` freezes
 five seeded questions per confirmation conversation, including adversarial
 questions. Both variants receive the same 4,000-character reader ceiling. The
-already-installed `qwen3:1.7b` reader and `qwen2.5:7b` judge use different
+already-installed `qwen3:1.7b` reader and `qwen3:8b` judge use different
 weights, sequentially, with 2,048-token windows and four CPU threads. This runner
 does not download models; install the desired documented models locally first.
 
@@ -149,7 +149,7 @@ never prevent stopping owned containers.
 
 ## GitHub quality workflow without LLM API keys
 
-The **Local-model memory quality** workflow runs Ollama, Nomic, Qwen3 and Qwen2.5
+The **Local-model memory quality** workflow runs Ollama, Nomic and two Qwen3 models
 inside a standard GitHub-hosted Linux runner. It requires no provider key and
 makes no external inference requests. Downloads fetch public model weights,
 tokenizer data and the pinned dataset. This runs on GitHub's cloud VM, not the

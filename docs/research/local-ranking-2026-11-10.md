@@ -93,7 +93,7 @@ answered for both variants at a 4,000-character reader-context ceiling. This is
 smaller than the retrieval experiment's ceiling so the local reader fits its
 2,048-token window. It must not be compared directly with the table above.
 
-The reader is Qwen3 1.7B; the current separate judge is Qwen2.5 7B. Both run
+The reader is Qwen3 1.7B; the current separate judge is Qwen3 8B. Both run
 inside the evaluator's own machine or CI runner. Model
 digests, generation options and case hashes are frozen; prompts are defined in
 the versioned harness. The judge sees reference and
@@ -106,9 +106,11 @@ for the resumable phases and interpretation limits.
 The first CI run completed all 20 reader requests, but its Qwen2.5 1.5B judge
 returned false on every control and passed only 2/4 checks. Its answer scores
 are invalid and must not be interpreted as system accuracy. The revised
-protocol uses a stronger local judge, states that references are ground truth,
+protocol states that references are ground truth,
 and requires all eight controls to pass before dataset evaluation. This is
 judge calibration against synthetic controls, not tuning against LoCoMo answers.
+Qwen2.5 7B subsequently passed 6/8 and was also rejected. The current configured
+judge must pass all eight; no failed calibration is accepted as an accuracy score.
 
 ## Next evidence-backed techniques to investigate
 

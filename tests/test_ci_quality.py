@@ -66,7 +66,7 @@ class QualityArtifactTests(unittest.TestCase):
             if args[0] == "benchmarks.local_answer_pilot" and "prepare" in args
         )
         self.assertIn("--judge-model", prepare)
-        self.assertIn("qwen2.5:7b", prepare)
+        self.assertIn("qwen3:8b", prepare)
 
     def test_failed_preflight_never_runs_reader_or_retrieval(self):
         class Http:
