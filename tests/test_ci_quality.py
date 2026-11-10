@@ -5,7 +5,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from benchmarks.ci_quality import export
+from benchmarks.ci_quality import export, evaluate
 
 
 class QualityArtifactTests(unittest.TestCase):
@@ -25,6 +25,78 @@ class QualityArtifactTests(unittest.TestCase):
                 self.assertNotIn("SECRET_MARKER", value)
                 self.assertNotIn("RAW_ANSWER_MARKER", value)
             self.assertFalse(report["retrieval_complete"])
+
+    def test_calibration_precedes_dataset_and_reader_and_flags_reach_correct_cli(self):
+        class Http:
+            def call(self, method, path, body=None):
+                return (
+                    {"version": "test"}
+                    if path == "/api/version"
+                    else {"status": "success"}
+                )
+
+        calls = []
+        with tempfile.TemporaryDirectory() as directory:
+            with (
+                patch("benchmarks.ci_quality.Http", return_value=Http()),
+                patch(
+                    "benchmarks.ci_quality.command",
+                    side_effect=lambda *args: calls.append(args),
+                ),
+            ):
+                evaluate(Path(directory), True)
+        calibration = next(i for i, args in enumerate(calls) if "calibrate" in args)
+        dataset = next(
+            i for i, args in enumerate(calls) if args[0] == "benchmarks.locomo"
+        )
+        reader = next(
+            i
+            for i, args in enumerate(calls)
+            if args[0] == "benchmarks.local_answer_pilot" and "answer" in args
+        )
+        self.assertLess(calibration, dataset)
+        self.assertLess(calibration, reader)
+        for args in calls:
+            if args[0] == "benchmarks.ranking_ablation":
+                self.assertNotIn("--judge-model", args)
+                self.assertNotIn("--reader-model", args)
+        prepare = next(
+            args
+            for args in calls
+            if args[0] == "benchmarks.local_answer_pilot" and "prepare" in args
+        )
+        self.assertIn("--judge-model", prepare)
+        self.assertIn("qwen2.5:7b", prepare)
+
+    def test_failed_preflight_never_runs_reader_or_retrieval(self):
+        class Http:
+            def call(self, method, path, body=None):
+                return (
+                    {"version": "test"}
+                    if path == "/api/version"
+                    else {"status": "success"}
+                )
+
+        calls = []
+
+        def command(*args):
+            calls.append(args)
+            if "calibrate" in args:
+                raise RuntimeError("Unreliable judge")
+
+        with tempfile.TemporaryDirectory() as directory:
+            with (
+                patch("benchmarks.ci_quality.Http", return_value=Http()),
+                patch("benchmarks.ci_quality.command", side_effect=command),
+            ):
+                with self.assertRaises(RuntimeError):
+                    evaluate(Path(directory), True)
+        self.assertFalse(
+            any(
+                args[0] == "benchmarks.ranking_ablation" or "answer" in args
+                for args in calls
+            )
+        )
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 # Broader local ranking and recovery evaluation
 
-Recorded 10 November 2026. All embedding and language-model inference ran on
-the laptop. Dataset/model downloads and GitHub operations are separate from
+Recorded 10 November 2026. The initial measurements ran on the laptop; the CI
+workflow runs models inside its GitHub runner. Downloads and GitHub operations are separate from
 inference. The evaluated compact ranker is now shared with an **opt-in experimental
 API path**; weighted hybrid remains the default. No competitor win is claimed.
 
@@ -93,14 +93,22 @@ answered for both variants at a 4,000-character reader-context ceiling. This is
 smaller than the retrieval experiment's ceiling so the local reader fits its
 2,048-token window. It must not be compared directly with the table above.
 
-The reader is local Qwen3 1.7B; the separate judge is local Qwen2.5 1.5B. Model
+The reader is Qwen3 1.7B; the current separate judge is Qwen2.5 7B. Both run
+inside the evaluator's own machine or CI runner. Model
 digests, generation options and case hashes are frozen; prompts are defined in
 the versioned harness. The judge sees reference and
-candidate answers without variant labels. Four simple sanity controls and all
+candidate answers without variant labels. Eight synthetic sanity controls and all
 request/invalid-output failures are reported. These small related model families
 and a ten-question custom rubric cannot establish official LoCoMo accuracy or
 superiority. See the [benchmark instructions](https://github.com/emartai/remembr/blob/main/benchmarks/README.md)
 for the resumable phases and interpretation limits.
+
+The first CI run completed all 20 reader requests, but its Qwen2.5 1.5B judge
+returned false on every control and passed only 2/4 checks. Its answer scores
+are invalid and must not be interpreted as system accuracy. The revised
+protocol uses a stronger local judge, states that references are ground truth,
+and requires all eight controls to pass before dataset evaluation. This is
+judge calibration against synthetic controls, not tuning against LoCoMo answers.
 
 ## Next evidence-backed techniques to investigate
 

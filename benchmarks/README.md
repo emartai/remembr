@@ -125,15 +125,15 @@ After confirmation, `python -m benchmarks.local_answer_pilot prepare --work-dir
 <pilot-dir> --ranking-work-dir <ranking-dir> --data <pinned-locomo10.json>` freezes
 five seeded questions per confirmation conversation, including adversarial
 questions. Both variants receive the same 4,000-character reader ceiling. The
-already-installed `qwen3:1.7b` reader and `qwen2.5:1.5b` judge use different
+already-installed `qwen3:1.7b` reader and `qwen2.5:7b` judge use different
 weights, sequentially, with 2,048-token windows and four CPU threads. This runner
 does not download models; install the desired documented models locally first.
 
 Run its `answer`, `judge` and `summarize` phases with the same `--work-dir`.
 Answers and judgments checkpoint independently. Changed model digests, options
 or frozen cases are rejected. Request failures and invalid judgments remain in
-the denominator. Four simple judge sanity controls are reported separately;
-passing them does not establish that a small local judge is reliable on LoCoMo.
+the denominator. Eight synthetic judge controls run before dataset evaluation;
+passing them does not establish that the local judge is reliable on full LoCoMo.
 This ten-question custom-rubric pilot is not official accuracy or evidence of
 superiority over a competitor.
 

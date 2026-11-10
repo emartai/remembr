@@ -3,6 +3,7 @@
 import json
 import tempfile
 import unittest
+from benchmarks.local_answer_pilot import calibrate_judge
 from pathlib import Path
 from unittest.mock import patch
 
@@ -63,6 +64,25 @@ class LocalAnswerPilotTests(unittest.TestCase):
             )
             self.assertEqual(report["variants"]["baseline"]["invalid_judgments"], 1)
             self.assertEqual(report["variants"]["baseline"]["reader_errors"], 1)
+
+    def test_always_false_judge_is_rejected_before_any_dataset_grading(self):
+        class Http:
+            def call(self, method, path, body=None):
+                return (
+                    {"models": [{"name": "judge", "digest": "frozen"}]}
+                    if path == "/api/tags"
+                    else {}
+                )
+
+        with tempfile.TemporaryDirectory() as directory:
+            work = Path(directory)
+            with patch(
+                "benchmarks.local_answer_pilot.complete",
+                return_value={"text": '{"correct":false}'},
+            ):
+                with self.assertRaises(RuntimeError):
+                    calibrate_judge(work, Http(), "judge")
+            self.assertFalse((work / "judgments.jsonl").exists())
 
 
 if __name__ == "__main__":

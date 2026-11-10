@@ -1,12 +1,15 @@
 """Ranking receives no gold labels; selection must respect quality/token gates."""
 
 import unittest
+import random
+from unittest.mock import patch
 
 from benchmarks.ranking_ablation import (
     choose,
     pack,
 )
 from server.app.ranking import diversify, fuse, lexical_scores, rank, rank_order
+from server.app import ranking
 
 
 class RankingTests(unittest.TestCase):
@@ -72,6 +75,46 @@ class RankingTests(unittest.TestCase):
         self.assertEqual(order[:8], rank(*args)["rrf_mmr_compact_8"])
         self.assertEqual(sorted(order), list(range(50)))
         self.assertEqual(rank_order("q", [], [1.0], []), [])
+
+    def test_incremental_diversity_matches_reference_with_negative_similarities(self):
+        rng = random.Random(42)
+        vectors = [[rng.uniform(-1, 1) for _ in range(8)] for _ in range(40)]
+        order = list(range(40))
+        rng.shuffle(order)
+        relevance = [rng.random() for _ in order]
+
+        def reference(limit, weight):
+            chosen = []
+            remaining = list(order)
+            maximum = max(relevance) or 1
+            while remaining and len(chosen) < limit:
+
+                def score(index):
+                    redundancy = max(
+                        (ranking.cosine(vectors[index], vectors[j]) for j in chosen),
+                        default=0,
+                    )
+                    return (
+                        weight * relevance[index] / maximum - (1 - weight) * redundancy
+                    )
+
+                best = max(remaining, key=lambda i: (score(i), -i))
+                chosen.append(best)
+                remaining.remove(best)
+            return chosen
+
+        for limit in (0, 1, 8, 40):
+            for weight in (0, 0.5, 0.85, 1):
+                self.assertEqual(
+                    diversify(order, relevance, vectors, limit, weight),
+                    reference(limit, weight),
+                )
+
+    def test_full_diversity_evaluates_each_remaining_pair_only_once(self):
+        vectors = [[1.0, i / 40] for i in range(40)]
+        with patch("server.app.ranking.cosine", wraps=ranking.cosine) as similarity:
+            diversify(list(range(40)), [1.0] * 40, vectors, 40)
+        self.assertLessEqual(similarity.call_count, 40 * 39 // 2)
 
 
 if __name__ == "__main__":

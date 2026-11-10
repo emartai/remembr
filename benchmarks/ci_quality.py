@@ -12,7 +12,7 @@ from benchmarks.locomo import Http, read_json, state_paths, write_json
 
 EMBEDDING_MODEL = "nomic-embed-text:v1.5"
 READER_MODEL = "qwen3:1.7b"
-JUDGE_MODEL = "qwen2.5:1.5b"
+JUDGE_MODEL = "qwen2.5:7b"
 
 
 def command(*args):
@@ -35,6 +35,7 @@ def export(work):
         "selection": work / "ranking/selection.json",
         "answer_pilot": work / "answers/summary.json",
         "environment": work / "environment.json",
+        "cpu_ranking": work / "performance/performance.json",
     }.items():
         if path.exists():
             report["stages"][name] = read_json(path)
@@ -43,6 +44,19 @@ def export(work):
         for name in ("development", "confirmation", "selection")
     )
     answer = report["stages"].get("answer_pilot")
+    control_path = work / "answers/judge-controls.jsonl"
+    if control_path.exists():
+        controls = [
+            json.loads(line)
+            for line in control_path.read_text(encoding="utf-8").splitlines()
+        ]
+        report["judge_calibration"] = {
+            "attempted": len(controls),
+            "passed": sum(r["passed"] for r in controls),
+        }
+        calibration_config = work / "answers/judge-controls-config.json"
+        if calibration_config.exists():
+            report["judge_calibration"]["configuration"] = read_json(calibration_config)
     manifest = work / "answers/manifest.json"
     if manifest.exists():
         frozen = read_json(manifest)
@@ -88,10 +102,21 @@ def export(work):
             "| Ranker | Expected | Reader errors | Invalid judgments | Judged correct |",
             "| --- | ---: | ---: | ---: | ---: |",
         ]
-        for variant, item in answer["variants"].items():
+        if answer["judge_sanity_passed"]:
+            for variant, item in answer["variants"].items():
+                lines.append(
+                    f"| {variant} | {item['expected_questions']} | {item['reader_errors']} | {item['invalid_judgments']} | {item['correct_count']} |"
+                )
+        else:
             lines.append(
-                f"| {variant} | {item['expected_questions']} | {item['reader_errors']} | {item['invalid_judgments']} | {item['correct_count']} |"
+                "Judged-correct counts withheld: the judge failed its sanity checks."
             )
+    elif "judge_calibration" in report:
+        calibration = report["judge_calibration"]
+        lines += [
+            "",
+            f"Judge preflight controls: **{calibration['passed']}/{calibration['attempted']}**. No answer accuracy is available.",
+        ]
     lines += [
         "",
         "Small related models and a ten-question custom rubric do not establish official accuracy. Raw cases, credentials, vectors and model weights are not included in this artifact.",
@@ -107,6 +132,7 @@ def export(work):
 
 
 def evaluate(work, answers):
+    command("benchmarks.ranking_performance", "--work-dir", str(work / "performance"))
     http = Http("http://127.0.0.1:11434", interval=0, timeout=1200)
     environment = {
         "platform": platform.platform(),
@@ -125,6 +151,15 @@ def evaluate(work, answers):
         if result.get("status") != "success":
             raise RuntimeError("Local model download did not complete")
     dataset, ranking, pilot = work / "dataset", work / "ranking", work / "answers"
+    if answers:
+        command(
+            "benchmarks.local_answer_pilot",
+            "calibrate",
+            "--work-dir",
+            str(pilot),
+            "--judge-model",
+            JUDGE_MODEL,
+        )
     command("benchmarks.locomo", "prepare", "--work-dir", str(dataset))
     data = dataset / "locomo10.json"
     for phase in ("development", "confirmation"):
@@ -149,6 +184,10 @@ def evaluate(work, answers):
             str(ranking),
             "--data",
             str(data),
+            "--reader-model",
+            READER_MODEL,
+            "--judge-model",
+            JUDGE_MODEL,
         )
         for phase in ("answer", "judge", "summarize"):
             command("benchmarks.local_answer_pilot", phase, "--work-dir", str(pilot))

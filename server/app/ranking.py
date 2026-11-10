@@ -55,15 +55,25 @@ def diversify(order, relevance, vectors, limit, weight=0.85):
     selected = []
     remaining = list(order[:40])
     maximum = max((relevance[i] for i in remaining), default=1) or 1
+    redundancy = {index: None for index in remaining}
     while remaining and len(selected) < limit:
 
         def score(index):
-            redundancy = max((cosine(vectors[index], vectors[j]) for j in selected), default=0)
-            return weight * relevance[index] / maximum - (1 - weight) * redundancy
+            penalty = redundancy[index]
+            return weight * relevance[index] / maximum - (1 - weight) * (
+                penalty if penalty is not None else 0
+            )
 
         best = max(remaining, key=lambda i: (score(i), -i))
         selected.append(best)
         remaining.remove(best)
+        if len(selected) < limit:
+            for index in remaining:
+                similarity = cosine(vectors[index], vectors[best])
+                previous = redundancy[index]
+                redundancy[index] = (
+                    max(previous, similarity) if previous is not None else similarity
+                )
     return selected
 
 
@@ -77,14 +87,15 @@ def rank(query, documents, query_vector, vectors):
         key=lambda i: (-lexical[i], i),
     )
     fused, scores = fuse([ordered[:40], keyword_order[:40]])
+    diverse_fused = diversify(fused, scores, vectors, 8)
     return {
         "cosine_8": ordered[:8],
         "rrf_8": fused[:8],
         "mmr_8": diversify(ordered, semantic, vectors, 8),
-        "rrf_mmr_8": diversify(fused, scores, vectors, 8),
+        "rrf_mmr_8": list(diverse_fused),
         "cosine_16": ordered[:16],
         "rrf_compact_8": fused[:8],
-        "rrf_mmr_compact_8": diversify(fused, scores, vectors, 8),
+        "rrf_mmr_compact_8": list(diverse_fused),
     }
 
 

@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import Float, case, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
 from app.api.responses import success
 from app.db.rls import set_org_context
@@ -595,7 +596,8 @@ async def search_memory(
                         "Experimental rrf_mmr supports at most 200 ready compatible "
                         "memories; use weighted ranking for larger spaces",
                     )
-                order = rank_order(
+                order = await run_in_threadpool(
+                    rank_order,
                     payload.query,
                     [r.content for r in candidates],
                     vector,
