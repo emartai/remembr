@@ -25,6 +25,14 @@ jobs:
           python-version: '3.11'
       - name: Check label isolation and local-provider defaults
         run: python -m unittest discover -s tests -p test_memory_benchmark.py -v
+      - name: Check source-only ranking and selection gates
+        run: python -m unittest discover -s tests -p test_ranking_ablation.py -v
+      - name: Check local scoring identity and failure accounting
+        run: python -m unittest discover -s tests -p test_local_answer_pilot.py -v
+      - name: Check disposable probe cleanup
+        run: python -m unittest discover -s tests -p test_live_recovery_probe.py -v
+      - name: Check public quality artifact privacy
+        run: python -m unittest discover -s tests -p test_ci_quality.py -v
 
   test-server:
     name: test-server (${{ matrix.os }})

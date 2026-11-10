@@ -112,3 +112,59 @@ python scripts/test_explorer_browser.py --url http://127.0.0.1:8000 --output ./b
 Use `--browser-executable /absolute/path/to/chromium` to reuse an installed browser. The suite creates a synthetic account and its own project, memories and principal, then deletes its memory content and revokes its credential. Account/project metadata and deletion tombstones remain. It writes a JSON result and screenshots without saving credential-bearing browser storage, HAR files or traces. Controlled response cases cover pending/failed rendering, a service error and delayed requests separately from the real storage/search/lifecycle flows. The 1 November 2026 local run passed 19 browser checks with Chromium 151.0.7922.34, including 320 px and 390 px layouts; other browser engines and physical mobile devices were not tested.
 
 The explorer is an initial operational tool, not a hosted account/billing portal. Access follows the supplied credential; read-only actions cannot be elevated by enabling a button in the browser. Keep the service bound to localhost unless configuring an authenticated HTTPS deployment deliberately.
+## Recover a failed embedding without duplicating memory
+
+After restoring Ollama and the worker, a project owner or a principal with write
+permission can call:
+
+```http
+POST /api/v1/projects/spaces/{space_id}/memories/{memory_id}/retry-embedding
+Content-Type: application/json
+X-API-Key: <this connection's rmsp_ credential>
+
+{}
+```
+
+The response contains `id`, `queued` and `embedding_status`. Retrying a failed
+embedding preserves its memory ID, author, content, source and correction chain.
+A ready memory is a no-op. Read-only, revoked and ungranted credentials cannot
+retry; expired, superseded and deleted memories are not retried. A write-only
+credential receives status metadata, not another principal's memory content.
+
+For a memory left `pending` after an interrupted process or a suspected lost
+queue submission, explicitly send `{"retry_pending": true}`. First check that
+the provider and worker are available. A pending job might still be running, so
+this can enqueue duplicate work; completion is safe to repeat and a late failure
+cannot demote an already-ready memory. This is operator-assisted recovery, not
+an automatic database outbox or reconciliation service. Poll the existing
+`GET .../memories/{memory_id}/status` endpoint for completion.
+
+## Experimental compact ranking
+
+For a nonempty hybrid search, send `"ranking": "rrf_mmr"` in the existing
+space-search request to try the evaluated BM25/cosine rank fusion followed by
+diversity reranking. The optional API path uses the same ranking functions as
+the offline experiment. Weighted hybrid is the default.
+
+This experimental path supports at most **200 ready memories matching the active
+embedding model and dimensions**, after tenant/space, correction, expiry and
+deletion filters. Larger candidate sets return 422; use weighted ranking for
+those spaces. The context ceiling is 10,000 characters, and a smaller requested
+budget is respected. Pagination remains bounded by the actual returned rows.
+Scores describe rank positions, not probabilities. The evaluation covers the
+first eight results; later pages are not a published quality result.
+
+```json
+{
+  "query": "Which database decision did the team correct?",
+  "mode": "hybrid",
+  "ranking": "rrf_mmr",
+  "limit": 8,
+  "context_chars": 10000
+}
+```
+
+Use a dedicated pilot space for comparisons. The current SDK/MCP defaults do
+not request this option; it is available through the HTTP API. See the
+[evaluation record](research/local-ranking-2026-11-10.md) for the measured scope.
+

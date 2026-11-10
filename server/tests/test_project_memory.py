@@ -307,3 +307,291 @@ async def test_cross_organization_and_existing_private_memory_stay_isolated(shar
         f"/api/v1/projects/spaces/{s['space']}/search", json={}, headers=foreign
     )
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_five_runtime_credentials_share_corrections_and_revoke_independently(shared):
+    """Model account logins are external; verify five independent Remembr identities."""
+    s = shared
+    principals = [s["a"], s["b"]]
+    for label in ("Claude profile 2", "Codex profile 1", "Codex profile 2"):
+        principal = await s["call"]("POST", "/principals", {"name": label})
+        principals.append(principal)
+    for principal in principals:
+        await s["call"](
+            "PUT",
+            f"/spaces/{s['space']}/grants/{principal['id']}",
+            {"can_read": True, "can_write": True},
+        )
+    assert len({p["api_key"] for p in principals}) == 5
+    original = await save(s)
+    headers = [{"X-API-Key": p["api_key"]} for p in principals]
+    corrected = await s["call"](
+        "POST",
+        f"/spaces/{s['space']}/memories",
+        {
+            "content": "Correction: use PostgreSQL with pgvector.",
+            "idempotency_key": "multi-profile-correction",
+            "supersedes_id": original["id"],
+        },
+        headers[2],
+    )
+    assert corrected["author_id"] == principals[2]["id"]
+    for header in headers:
+        result = await s["call"]("POST", f"/spaces/{s['space']}/search", {}, header)
+        assert [r["id"] for r in result["results"]] == [corrected["id"]]
+    await s["call"]("DELETE", f"/principals/{principals[0]['id']}")
+    denied = await s["client"].post(
+        f"/api/v1/projects/spaces/{s['space']}/search", json={}, headers=headers[0]
+    )
+    assert denied.status_code == 401
+    for header in headers[1:]:
+        result = await s["call"](
+            "GET", f"/spaces/{s['space']}/memories/{corrected['id']}", headers=header
+        )
+        assert result["author_id"] == principals[2]["id"]
+
+
+@pytest.mark.asyncio
+async def test_retry_preserves_identity_and_recovers_provider_failure(shared, db, monkeypatch):
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+
+    from app.tasks import project_memory as task
+
+    s = shared
+    memory = await save(s)
+    org_id = str((await db.get(ProjectMemory, uuid.UUID(memory["id"]))).org_id)
+    monkeypatch.setattr(
+        task, "AsyncSessionLocal", async_sessionmaker(db.bind, expire_on_commit=False)
+    )
+
+    class Provider:
+        model = "recovery-test"
+        unavailable = True
+
+        async def generate_embedding(self, text):
+            if self.unavailable:
+                raise ConnectionError("Local provider unavailable")
+            return [1.0, 0.0, 0.0], 3
+
+    provider = Provider()
+    monkeypatch.setattr("app.services.embeddings.get_embedding_provider", lambda: provider)
+    with pytest.raises(ConnectionError):
+        await task.generate(memory["id"], org_id)
+    await task.generate(memory["id"], org_id, failed=True)
+    db.expire_all()
+    queued = []
+    monkeypatch.setattr(task.embed_project_memory, "delay", lambda *args: queued.append(args))
+    endpoint = f"/spaces/{s['space']}/memories/{memory['id']}/retry-embedding"
+    response = await s["call"]("POST", endpoint, {}, s["writer"])
+    assert response["queued"] and response["embedding_status"] == "pending"
+    assert "content" not in response and len(queued) == 1
+    assert not (await s["call"]("POST", endpoint, {}, s["writer"]))["queued"]
+    provider.unavailable = False
+    await task.generate(memory["id"], org_id)
+    # A delayed failure notification from an earlier duplicate must not demote ready.
+    await task.generate(memory["id"], org_id, failed=True)
+    db.expire_all()
+    restored = await s["call"]("GET", f"/spaces/{s['space']}/memories/{memory['id']}")
+    assert restored["embedding_status"] == "ready"
+    assert restored["author_id"] == memory["author_id"]
+    assert restored["content"] == memory["content"]
+    assert not (await s["call"]("POST", endpoint, {}, s["writer"]))["queued"]
+
+
+@pytest.mark.asyncio
+async def test_retry_queue_outage_pending_requeue_and_permission_boundaries(
+    shared, db, monkeypatch
+):
+    from app.tasks.project_memory import embed_project_memory
+
+    s = shared
+    memory = await save(s)
+    endpoint = f"/spaces/{s['space']}/memories/{memory['id']}/retry-embedding"
+    full = "/api/v1/projects" + endpoint
+    assert (await s["client"].post(full, json={}, headers=s["reader"])).status_code == 404
+    outsider = await s["call"]("POST", "/principals", {"name": "Ungrantable outsider"})
+    assert (
+        await s["client"].post(full, json={}, headers={"X-API-Key": outsider["api_key"]})
+    ).status_code == 404
+
+    def queue_down(*args):
+        raise ConnectionError("Broker unavailable")
+
+    monkeypatch.setattr(embed_project_memory, "delay", queue_down)
+    result = await s["call"]("POST", endpoint, {"retry_pending": True}, s["writer"])
+    assert not result["queued"] and result["embedding_status"] == "failed"
+    queued = []
+    monkeypatch.setattr(embed_project_memory, "delay", lambda *args: queued.append(args))
+    await s["call"]("PUT", f"/spaces/{s['space']}/grants/{s['a']['id']}", {"can_write": True})
+    result = await s["call"]("POST", endpoint, {}, s["writer"])
+    assert result["queued"] and "content" not in result
+    assert len(queued) == 1
+    # An explicit pending retry is available after a worker/process outage.
+    assert (await s["call"]("POST", endpoint, {"retry_pending": True}, s["writer"]))["queued"]
+    await s["call"]("DELETE", f"/spaces/{s['space']}/memories/{memory['id']}")
+    assert (await s["client"].post(full, json={}, headers=s["writer"])).status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_during_embedding_cannot_restore_content_or_vector(shared, db, monkeypatch):
+    from sqlalchemy.ext.asyncio import async_sessionmaker
+
+    from app.tasks import project_memory as task
+
+    s = shared
+    memory = await save(s)
+    org_id = str((await db.get(ProjectMemory, uuid.UUID(memory["id"]))).org_id)
+    monkeypatch.setattr(
+        task, "AsyncSessionLocal", async_sessionmaker(db.bind, expire_on_commit=False)
+    )
+
+    class Provider:
+        model = "delete-race-test"
+
+        async def generate_embedding(self, text):
+            await s["call"]("DELETE", f"/spaces/{s['space']}/memories/{memory['id']}")
+            return [1.0, 0.0, 0.0], 3
+
+    monkeypatch.setattr("app.services.embeddings.get_embedding_provider", lambda: Provider())
+    await task.generate(memory["id"], org_id)
+    row = await db.get(ProjectMemory, uuid.UUID(memory["id"]), populate_existing=True)
+    assert row.deleted_at and row.content == "" and row.vector is None
+
+
+def install_ranking_provider(monkeypatch):
+    class Provider:
+        model = "ranking-test"
+
+        async def generate_embedding(self, text):
+            return [1.0, 0.0, 0.0], 3
+
+    monkeypatch.setattr("app.services.embeddings.get_embedding_provider", lambda: Provider())
+
+
+@pytest.mark.asyncio
+async def test_experimental_ranker_filters_sources_and_preserves_budget_pagination(
+    shared, db, monkeypatch
+):
+    from app.models import Organization
+
+    s = shared
+    install_ranking_provider(monkeypatch)
+    visible = []
+    for index in range(3):
+        memory = await save(
+            s, content=f"PostgreSQL database decision {index}", idempotency_key=f"rank-{index}"
+        )
+        row = await db.get(ProjectMemory, uuid.UUID(memory["id"]))
+        row.vector, row.embedding_model, row.embedding_status = (
+            [1.0, 0.0, 0.0],
+            "ranking-test",
+            "ready",
+        )
+        visible.append(memory["id"])
+    hidden = await save(
+        s, content="PostgreSQL incompatible private marker", idempotency_key="rank-incompatible"
+    )
+    row = await db.get(ProjectMemory, uuid.UUID(hidden["id"]))
+    row.vector, row.embedding_model, row.embedding_status = [1.0, 0.0], "other-model", "ready"
+    foreign = Organization(name="Foreign ranker tenant")
+    db.add(foreign)
+    await db.flush()
+    db.add(
+        ProjectMemory(
+            org_id=foreign.id,
+            space_id=uuid.UUID(s["space"]),
+            author_id=uuid.uuid4(),
+            author_kind="principal",
+            content="PostgreSQL foreign private marker",
+            idempotency_key="foreign-rank",
+            payload_hash="0" * 64,
+            vector=[1.0, 0.0, 0.0],
+            embedding_model="ranking-test",
+            embedding_status="ready",
+        )
+    )
+    await db.commit()
+    found, offset = [], 0
+    while True:
+        response = await s["call"](
+            "POST",
+            f"/spaces/{s['space']}/search",
+            {
+                "query": "PostgreSQL",
+                "mode": "hybrid",
+                "ranking": "rrf_mmr",
+                "limit": 2,
+                "offset": offset,
+                "context_chars": 10,
+            },
+            s["reader"],
+        )
+        assert response["ranking"] == "rrf_mmr"
+        assert response["context_chars_used"] <= 10
+        assert all(r["retrieval_reason"] == "hybrid_rrf_mmr" for r in response["results"])
+        assert "not probabilities" in response["score_explanation"]
+        found.extend(r["id"] for r in response["results"])
+        if not response["has_more"]:
+            break
+        assert response["next_offset"] > offset
+        offset = response["next_offset"]
+    assert sorted(found) == sorted(visible)
+    outsider = await s["call"]("POST", "/principals", {"name": "No ranking access"})
+    denied = await s["client"].post(
+        f"/api/v1/projects/spaces/{s['space']}/search",
+        json={"query": "PostgreSQL", "ranking": "rrf_mmr"},
+        headers={"X-API-Key": outsider["api_key"]},
+    )
+    assert denied.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_experimental_ranker_caps_candidates_without_affecting_weighted_search(
+    shared, db, monkeypatch
+):
+    s = shared
+    install_ranking_provider(monkeypatch)
+    await save(s)
+    # Fetch the organization from a real saved memory; author IDs are independent.
+    original = await db.scalar(
+        select(ProjectMemory).where(ProjectMemory.space_id == uuid.UUID(s["space"]))
+    )
+    org_id = original.org_id
+    for index in range(201):
+        db.add(
+            ProjectMemory(
+                org_id=org_id,
+                space_id=uuid.UUID(s["space"]),
+                author_id=uuid.UUID(s["a"]["id"]),
+                author_kind="principal",
+                content=f"database {index}",
+                idempotency_key=f"cap-{index}",
+                payload_hash="0" * 64,
+                vector=[1.0, 0.0, 0.0],
+                embedding_model="ranking-test",
+                embedding_status="ready",
+            )
+        )
+    await db.commit()
+    response = await s["client"].post(
+        f"/api/v1/projects/spaces/{s['space']}/search",
+        json={"query": "database", "ranking": "rrf_mmr"},
+        headers=s["reader"],
+    )
+    assert response.status_code == 422
+    assert "200" in response.text
+    weighted = await s["call"](
+        "POST", f"/spaces/{s['space']}/search", {"query": "database", "limit": 2}, s["reader"]
+    )
+    assert weighted["ranking"] == "weighted" and len(weighted["results"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_experimental_ranking_requires_hybrid_query(shared):
+    s = shared
+    for body in ({"ranking": "rrf_mmr"}, {"query": "q", "ranking": "rrf_mmr", "mode": "keyword"}):
+        response = await s["client"].post(
+            f"/api/v1/projects/spaces/{s['space']}/search", json=body, headers=s["reader"]
+        )
+        assert response.status_code == 422

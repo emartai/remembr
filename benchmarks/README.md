@@ -103,3 +103,68 @@ LongMemEval is a separate benchmark and is not implemented by this runner.
 For an offline cosine-only prefix ablation after a retrieval run:
 `python -m benchmarks.embedding_ablation --work-dir $work`. This does not measure
 Remembr API latency or answer accuracy.
+## Broader local ranking and two-model pilots
+
+`python -m benchmarks.ranking_ablation --work-dir <outside-checkout-dir> --data
+<pinned-locomo10.json> --phase development` runs all annotated answerable
+questions from conversation index 0. Its frozen protocol compares cosine,
+positive-IDF BM25 rank fusion, diversity reranking and compact contexts.
+`--phase confirmation` evaluates only the selected candidate and baseline on
+unused conversation indices 1 and 2. Never reuse an existing run directory with
+a different protocol. The first protocol's results are retained separately;
+the compact second development iteration is disclosed in the research report.
+
+Selection requires higher multi-hop recall, no overall recall loss and at most
+10% growth in mean context tokens. The compact variants use a 10,000-character
+ceiling, below the 12,000-character baseline ceiling. These are source-only
+offline ranking evaluations. The functions are shared with the opt-in API
+implementation; weighted hybrid remains the default. Their offline runtime is
+not an API latency benchmark.
+
+After confirmation, `python -m benchmarks.local_answer_pilot prepare --work-dir
+<pilot-dir> --ranking-work-dir <ranking-dir> --data <pinned-locomo10.json>` freezes
+five seeded questions per confirmation conversation, including adversarial
+questions. Both variants receive the same 4,000-character reader ceiling. The
+already-installed `qwen3:1.7b` reader and `qwen2.5:1.5b` judge use different
+weights, sequentially, with 2,048-token windows and four CPU threads. This runner
+does not download models; install the desired documented models locally first.
+
+Run its `answer`, `judge` and `summarize` phases with the same `--work-dir`.
+Answers and judgments checkpoint independently. Changed model digests, options
+or frozen cases are rejected. Request failures and invalid judgments remain in
+the denominator. Four simple judge sanity controls are reported separately;
+passing them does not establish that a small local judge is reliable on LoCoMo.
+This ten-question custom-rubric pilot is not official accuracy or evidence of
+superiority over a competitor.
+
+`python -m benchmarks.verify_shared_recovery --work-dir <outside-checkout-dir>`
+uses the existing local `remembr-postgres` service and `remembr_default` network
+to create its own temporary database, Redis, API and worker containers. It tests
+a real provider outage, retry, API/worker restarts and five independent runtime
+credentials, then removes only its own resources. Its hardcoded disposable DB
+connection matches the development compose defaults. It is not a provider-login
+switching test. Run the probe only after starting PostgreSQL; stop PostgreSQL
+when finished if no other work needs it. Cleanup logging is best effort and must
+never prevent stopping owned containers.
+
+## GitHub quality workflow without LLM API keys
+
+The **Local-model memory quality** workflow runs Ollama, Nomic, Qwen3 and Qwen2.5
+inside a standard GitHub-hosted Linux runner. It requires no provider key and
+makes no external inference requests. Downloads fetch public model weights,
+tokenizer data and the pinned dataset. This runs on GitHub's cloud VM, not the
+developer's laptop. [GitHub documents the public runner resources](https://docs.github.com/en/actions/reference/runners/github-hosted-runners).
+
+Use Actions → Local-model memory quality → Run workflow. The reader/judge phase
+can be disabled for retrieval-only runs. The workflow tests itself on a PR that
+changes its own YAML; other PRs retain fast regression/integrity checks.
+The runtime is pinned to Ollama 0.35.1. The runner uses registry model
+`nomic-embed-text:v1.5`; the laptop's custom `publisher-f16` packaging is distinct,
+so compare candidates within a run and retain the recorded model digests.
+
+Only allowlisted aggregate JSON and Markdown are uploaded, retained for seven
+days. Raw QA, per-question responses, vectors, credentials and weights are
+excluded. Request failures, invalid judging or failed sanity controls make the
+answer evaluation fail rather than silently dropping cases. The owned Ollama
+service is stopped in an `always()` cleanup step.
+
