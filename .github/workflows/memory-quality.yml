@@ -32,7 +32,7 @@ jobs:
           --health-cmd="ollama list"
           --health-interval=10s --health-timeout=5s --health-retries=15
     env:
-      RUN_ROOT: ${{ runner.temp }}/remembr-memory-quality
+      RUN_ROOT: /tmp/remembr-memory-quality
       RUN_ANSWERS: ${{ github.event_name == 'pull_request' || inputs.run_answers }}
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
@@ -56,7 +56,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: local-model-memory-quality
-          path: ${{ runner.temp }}/remembr-memory-quality/public/
+          path: ${{ env.RUN_ROOT }}/public/
           retention-days: 7
           if-no-files-found: warn
       - name: Stop the owned model container
