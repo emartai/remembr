@@ -132,7 +132,7 @@ does not download models; install the desired documented models locally first.
 Run its `answer`, `judge` and `summarize` phases with the same `--work-dir`.
 Answers and judgments checkpoint independently. Changed model digests, options
 or frozen cases are rejected. Request failures and invalid judgments remain in
-the denominator. Eight synthetic judge controls run before dataset evaluation;
+the denominator. Ten synthetic judge controls run before dataset evaluation;
 passing them does not establish that the local judge is reliable on full LoCoMo.
 This ten-question custom-rubric pilot is not official accuracy or evidence of
 superiority over a competitor.

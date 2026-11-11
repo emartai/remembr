@@ -97,7 +97,7 @@ The reader is Qwen3 1.7B; the current separate judge is Qwen3 8B. Both run
 inside the evaluator's own machine or CI runner. Model
 digests, generation options and case hashes are frozen; prompts are defined in
 the versioned harness. The judge sees reference and
-candidate answers without variant labels. Eight synthetic sanity controls and all
+candidate answers without variant labels. Ten synthetic sanity controls and all
 request/invalid-output failures are reported. These small related model families
 and a ten-question custom rubric cannot establish official LoCoMo accuracy or
 superiority. See the [benchmark instructions](https://github.com/emartai/remembr/blob/main/benchmarks/README.md)
@@ -109,8 +109,11 @@ are invalid and must not be interpreted as system accuracy. The revised
 protocol states that references are ground truth,
 and requires all eight controls to pass before dataset evaluation. This is
 judge calibration against synthetic controls, not tuning against LoCoMo answers.
-Qwen2.5 7B subsequently passed 6/8 and was also rejected. The current configured
-judge must pass all eight; no failed calibration is accepted as an accuracy score.
+Qwen2.5 7B subsequently passed 6/8. Qwen3 8B passed 7/8, accepting a fabricated
+answer on an unanswerable question. The revised rubric asks the judge to check
+for explicit abstention and reject guesses on unanswerable questions. Two added
+synthetic controls cover hedged guesses and another phrasing of abstention.
+All ten controls must pass before dataset grading.
 
 ## Next evidence-backed techniques to investigate
 
