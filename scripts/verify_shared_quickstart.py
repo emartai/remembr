@@ -17,6 +17,7 @@ import subprocess
 import time
 from importlib.metadata import version
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -61,6 +62,7 @@ def main():
     project = admin("POST", "", {"name": "Onboarding acceptance"})
     space = admin("POST", f"/{project['id']}/spaces", {"name": "Decisions"})
     principal = admin("POST", "/principals", {"name": "First agent"})
+    reviewer = None
     namespace = {}
     try:
         admin(
@@ -79,6 +81,27 @@ def main():
             exec(compile(example, "docs/getting-started.md", "exec"), namespace)
         client, saved = namespace["client"], namespace["saved"]
         assert saved["author_id"] == principal["id"]
+        reviewer = admin("POST", "/principals", {"name": "Reviewing agent"})
+        admin(
+            "PUT",
+            f"/spaces/{space['id']}/grants/{reviewer['id']}",
+            {"can_read": True, "can_write": True},
+        )
+        memories = f"/projects/spaces/{space['id']}/memories"
+        original = call("GET", f"{memories}/{saved['id']}", token=reviewer["api_key"])
+        assert original["source_ref"] == "first-agent-demo"
+        correction = call(
+            "POST",
+            memories,
+            {
+                "supersedes_id": saved["id"],
+                "content": "The project uses PostgreSQL with the pgvector extension.",
+                "source_ref": "second-agent-review",
+                "idempotency_key": "second-agent-storage-decision-v2",
+            },
+            reviewer["api_key"],
+        )
+        assert correction["author_id"] == reviewer["id"]
         if args.recreate:
             subprocess.run(
                 [
@@ -104,11 +127,30 @@ def main():
                 if time.monotonic() > deadline:
                     raise TimeoutError("Recreated stack did not become ready")
                 time.sleep(3)
+        deadline = time.monotonic() + 180
+        while (
+            client.projects.status(space["id"], correction["id"])["embedding_status"]
+            != "ready"
+        ):
+            if time.monotonic() >= deadline:
+                raise TimeoutError("Corrected memory did not finish processing")
+            time.sleep(2)
+        revoked_key = reviewer["api_key"]
+        admin("DELETE", f"/principals/{reviewer['id']}")
+        reviewer = None
+        try:
+            call("GET", f"{memories}/{correction['id']}", token=revoked_key)
+        except HTTPError as exc:
+            if exc.code not in (401, 403):
+                raise
+        else:
+            raise AssertionError("Revoked agent still has access")
         recalled = client.projects.search(
             space["id"], "Which database does the project use?", mode="hybrid"
         )
-        assert recalled["results"][0]["id"] == saved["id"]
-        assert recalled["results"][0]["content"] == saved["content"]
+        assert [row["id"] for row in recalled["results"]] == [correction["id"]]
+        assert recalled["results"][0]["content"] == correction["content"]
+        assert recalled["results"][0]["source_ref"] == "second-agent-review"
         print(
             json.dumps(
                 {
@@ -117,11 +159,17 @@ def main():
                     "registration_and_login": True,
                     "documented_example": True,
                     "authenticated_authorship": True,
+                    "cross_principal_correction": True,
+                    "revoked_access_denied": True,
                     "restart_recall": args.recreate,
                 }
             )
         )
     finally:
+        if reviewer:
+            admin("DELETE", f"/principals/{reviewer['id']}")
+        if "correction" in locals():
+            admin("DELETE", f"/spaces/{space['id']}/memories/{correction['id']}")
         if "saved" in namespace:
             admin(
                 "DELETE", f"/spaces/{space['id']}/memories/{namespace['saved']['id']}"
