@@ -10,6 +10,7 @@ from unittest.mock import patch
 from benchmarks.local_answer_pilot import (
     OPTIONS,
     append,
+    grade,
     judge_messages,
     summarize,
     verify_models,
@@ -17,6 +18,25 @@ from benchmarks.local_answer_pilot import (
 
 
 class LocalAnswerPilotTests(unittest.TestCase):
+    def test_abstention_verdict_uses_only_question_and_candidate_reply(self):
+        with patch("benchmarks.local_answer_pilot.complete") as complete:
+            for label, expected in (
+                ("gives_answer", False),
+                ("abstains", True),
+                ("other", False),
+            ):
+                complete.return_value = {"text": json.dumps({"classification": label})}
+                self.assertIs(
+                    grade(None, "judge", "question", "reference", "reply", True),
+                    expected,
+                )
+                _, _, messages, schema = complete.call_args.args
+                self.assertEqual(
+                    json.loads(messages[1]["content"]),
+                    {"question": "question", "reply": "reply"},
+                )
+                self.assertIn(label, schema["properties"]["classification"]["enum"])
+
     def test_judge_payload_is_blind_to_candidate_variant(self):
         messages = judge_messages("question", "reference", "answer", False)
         payload = json.loads(messages[1]["content"])
