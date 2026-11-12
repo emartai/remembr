@@ -34,7 +34,9 @@ def main():
 
     def call(method, path, body=None, token=None):
         headers = {"Content-Type": "application/json"}
-        if token:
+        if token and token.startswith("rmsp_"):
+            headers["X-API-Key"] = token
+        elif token:
             headers["Authorization"] = "Bearer " + token
         request = Request(
             base + "/api/v1" + path,
