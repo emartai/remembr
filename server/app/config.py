@@ -100,6 +100,12 @@ class Settings(BaseSettings):
         description="Ollama embedding model to use",
     )
 
+    # Preserve existing vector spaces unless the operator explicitly opts in.
+    ollama_task_mode: Literal["legacy", "nomic_search"] = Field(
+        default="legacy",
+        description="Opt-in Nomic document/query prefixes; requires a fresh space or re-indexing",
+    )
+
     # OpenAI (optional — only required when embedding_provider=openai)
     openai_api_key: SecretStr | None = Field(
         default=None,

@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Request
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import Float, case, cast, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.concurrency import run_in_threadpool
 
 from app.api.responses import success
 from app.db.rls import set_org_context
@@ -123,12 +124,19 @@ class SearchInput(Payload):
     offset: int = Field(default=0, ge=0, le=10000)
     context_chars: int = Field(default=12000, ge=1, le=64000)
     include_inactive: bool = False
+    ranking: Literal["weighted", "rrf_mmr"] = "weighted"
 
     @model_validator(mode="after")
     def validate_history(self):
         if self.include_inactive and self.query:
             raise ValueError("History browsing requires an empty query")
+        if self.ranking == "rrf_mmr" and (not self.query or self.mode != "hybrid"):
+            raise ValueError("Experimental rrf_mmr ranking requires a nonempty hybrid query")
         return self
+
+
+class RetryEmbeddingInput(Payload):
+    retry_pending: bool = False
 
 
 def memory_dict(row):
@@ -394,9 +402,7 @@ async def store_memory(
     except Exception:
         await set_org_context(db, who.org_id)
         row.embedding_status = "failed"
-        row.embedding_error = (
-            "Embedding task could not be queued; save again with a new key to retry"
-        )
+        row.embedding_error = "Embedding task could not be queued; retry this memory's embedding"
         await db.commit()
     return success(memory_dict(row), request_id=request.state.request_id)
 
@@ -469,6 +475,64 @@ async def delete_memory(
     return success({"deleted": True, "id": str(memory_id)}, request_id=request.state.request_id)
 
 
+@router.post("/spaces/{space_id}/memories/{memory_id}/retry-embedding")
+async def retry_memory_embedding(
+    space_id: uuid.UUID,
+    memory_id: uuid.UUID,
+    payload: RetryEmbeddingInput,
+    request: Request,
+    who=Depends(actor),
+    db=Depends(get_db),
+):
+    """Retry without duplicating content or changing authorship/correction history."""
+    await permitted_space(db, who, space_id, "write")
+    row = await db.scalar(
+        select(ProjectMemory)
+        .where(
+            ProjectMemory.id == memory_id,
+            ProjectMemory.space_id == space_id,
+            ProjectMemory.org_id == who.org_id,
+            ProjectMemory.deleted_at.is_(None),
+        )
+        .with_for_update()
+    )
+    if not row:
+        raise HTTPException(404, "Memory not found")
+    if row.superseded_at or (row.expires_at and row.expires_at <= datetime.now(UTC)):
+        raise HTTPException(409, "Only active memories can be retried")
+    should_queue = row.embedding_status == "failed" or (
+        payload.retry_pending and row.embedding_status == "pending"
+    )
+    if should_queue:
+        row.embedding_status = "pending"
+        row.embedding_error = None
+    await db.commit()
+    if should_queue:
+        from app.tasks.project_memory import embed_project_memory
+
+        try:
+            embed_project_memory.delay(str(row.id), str(who.org_id))
+        except Exception:
+            await set_org_context(db, who.org_id)
+            # A duplicate task may already have succeeded; never demote it.
+            row = await db.scalar(
+                select(ProjectMemory)
+                .where(ProjectMemory.id == memory_id, ProjectMemory.org_id == who.org_id)
+                .with_for_update()
+                .execution_options(populate_existing=True)
+            )
+            if row and not row.deleted_at and row.embedding_status == "pending":
+                row.embedding_status = "failed"
+                row.embedding_error = "Embedding task could not be queued; retry after recovery"
+                await db.commit()
+            should_queue = False
+    # Write-only credentials must not obtain another principal's content.
+    return success(
+        {"id": str(memory_id), "queued": should_queue, "embedding_status": row.embedding_status},
+        request_id=request.state.request_id,
+    )
+
+
 @router.post("/spaces/{space_id}/search")
 async def search_memory(
     space_id: uuid.UUID,
@@ -489,6 +553,10 @@ async def search_memory(
             or_(ProjectMemory.expires_at.is_(None), ProjectMemory.expires_at > func.now()),
         ]
     score = None
+    experimental_rows = None
+    budget_limit = (
+        min(payload.context_chars, 10000) if payload.ranking == "rrf_mmr" else payload.context_chars
+    )
     selected_mode = payload.mode if payload.query else "recent"
     if payload.query:
         ts_query = func.plainto_tsquery("english", payload.query)
@@ -499,10 +567,11 @@ async def search_memory(
             score = keyword
         else:
             from app.services.embeddings import get_embedding_provider
+            from app.services.embeddings.base import embed_query
 
             provider = get_embedding_provider()
             try:
-                vector, dimensions = await provider.generate_embedding(payload.query)
+                vector, dimensions = await embed_query(provider, payload.query)
             except Exception as exc:
                 raise HTTPException(
                     503, "Embedding provider unavailable; use keyword search"
@@ -510,6 +579,36 @@ async def search_memory(
             compatible = (ProjectMemory.embedding_model == provider.model) & (
                 func.vector_dims(ProjectMemory.vector) == dimensions
             )
+            if payload.ranking == "rrf_mmr":
+                from app.ranking import rank_order
+
+                candidates = list(
+                    await db.scalars(
+                        select(ProjectMemory)
+                        .where(*conditions, compatible, ProjectMemory.embedding_status == "ready")
+                        .order_by(ProjectMemory.created_at, ProjectMemory.id)
+                        .limit(201)
+                    )
+                )
+                if len(candidates) > 200:
+                    raise HTTPException(
+                        422,
+                        "Experimental rrf_mmr supports at most 200 ready compatible "
+                        "memories; use weighted ranking for larger spaces",
+                    )
+                order = await run_in_threadpool(
+                    rank_order,
+                    payload.query,
+                    [r.content for r in candidates],
+                    vector,
+                    [r.vector for r in candidates],
+                )
+                experimental_rows = [
+                    (candidates[i], 1 / (position + 1)) for position, i in enumerate(order)
+                ]
+                experimental_rows = experimental_rows[
+                    payload.offset : payload.offset + payload.limit + 1
+                ]
             semantic = case(
                 (compatible, 1 - ProjectMemory.vector.cosine_distance(vector)), else_=0.0
             )
@@ -529,9 +628,9 @@ async def search_memory(
         .offset(payload.offset)
         .limit(payload.limit + 1)
     )
-    rows = (await db.execute(query)).all()
+    rows = experimental_rows if experimental_rows is not None else (await db.execute(query)).all()
     has_more = len(rows) > payload.limit
-    results, remaining, truncated = [], payload.context_chars, has_more
+    results, remaining, truncated = [], budget_limit, has_more
     for row, value in rows[: payload.limit]:
         if remaining <= 0:
             truncated = True
@@ -542,7 +641,9 @@ async def search_memory(
         remaining -= len(item["content"])
         truncated |= item["content_truncated"]
         item["score"] = float(value or 0)
-        item["retrieval_reason"] = selected_mode
+        item["retrieval_reason"] = (
+            "hybrid_rrf_mmr" if payload.ranking == "rrf_mmr" else selected_mode
+        )
         results.append(item)
     # A context budget can end a page before the row limit. Advance by rows
     # actually returned so clients neither skip records nor hide the next page.
@@ -556,10 +657,14 @@ async def search_memory(
             "has_more": has_more,
             "next_offset": payload.offset + len(results) if has_more else None,
             "truncated": truncated,
-            "context_chars_used": payload.context_chars - remaining,
+            "context_chars_used": budget_limit - remaining,
+            "ranking": payload.ranking,
             "include_inactive": payload.include_inactive,
             "score_explanation": (
-                "keyword: PostgreSQL ts_rank_cd; semantic: cosine similarity; "
+                "experimental BM25/cosine RRF followed by MMR; scores are reciprocal rank "
+                "positions, not probabilities."
+                if payload.ranking == "rrf_mmr"
+                else "keyword: PostgreSQL ts_rank_cd; semantic: cosine similarity; "
                 "hybrid: 0.7 cosine + 0.3 normalized keyword. Scores are not probabilities."
             ),
         },

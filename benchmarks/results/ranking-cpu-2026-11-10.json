@@ -1,0 +1,52 @@
+{
+  "scope": "Synthetic CPU-only ranking microbenchmark; not API latency or a Rust/Go comparison",
+  "before": {
+    "scope": "Synthetic CPU-only rank_order microbenchmark, not API latency or a Rust/Go comparison",
+    "platform": "Windows-10-10.0.26300-SP0",
+    "cpu_count": 8,
+    "candidates": 200,
+    "dimensions": 768,
+    "repeats_ms": [
+      4012.7508000005037,
+      4088.6076999995566,
+      5716.270299999451
+    ],
+    "median_ms": 4088.6076999995566,
+    "order_sha256": "75b9242687f5d07fafb08ead400e02fd4c2c6ab2c6b001e1135a0df16ea8aa69",
+    "source_sha256": "76f94aab3f1ba6cd0253f8e22d926f3c51bc18393ef4e9197201c043653d8b55"
+  },
+  "initial_optimized": {
+    "scope": "Synthetic CPU-only rank_order microbenchmark, not API latency or a Rust/Go comparison",
+    "platform": "Windows-10-10.0.26300-SP0",
+    "cpu_count": 8,
+    "candidates": 200,
+    "dimensions": 768,
+    "repeats_ms": [
+      354.02930000054766,
+      352.9002999966906,
+      360.3521000004548
+    ],
+    "median_ms": 354.02930000054766,
+    "order_sha256": "75b9242687f5d07fafb08ead400e02fd4c2c6ab2c6b001e1135a0df16ea8aa69",
+    "source_sha256": "ca88c346434cee267ae32c35815fa7e9e22c072e101f505c079522b9b2c810c2",
+    "relative_speedup": 11.548783391638013
+  },
+  "followup_optimized": {
+    "scope": "Synthetic CPU-only ranking probe; never an end-to-end API latency benchmark.",
+    "platform": "Windows-10-10.0.26300-SP0",
+    "cpu_count": 8,
+    "candidates": 200,
+    "dimensions": 768,
+    "seed": 42,
+    "repeats_ms": [
+      824.7669999982463,
+      607.8703000021051,
+      805.7676000025822
+    ],
+    "median_ms": 805.7676000025822,
+    "order_sha256": "75b9242687f5d07fafb08ead400e02fd4c2c6ab2c6b001e1135a0df16ea8aa69",
+    "source_sha256": "b9e8182ab0ef0cc31b30b709e9e4a6e1661b8cc76b81be196638a98c109be8c8"
+  },
+  "followup_speedup": 5.0741773434256405,
+  "matching_order_hash": true
+}

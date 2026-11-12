@@ -12,6 +12,15 @@ from app.services.scoping import MemoryScope
 from app.services.short_term import SessionMessage, ShortTermMemory
 
 
+@pytest.fixture(autouse=True)
+def offline_tokenizer(monkeypatch):
+    """These unit tests exercise memory policy, not the tokenizer's remote assets."""
+    monkeypatch.setattr(
+        "app.services.short_term.tiktoken.get_encoding",
+        lambda name: SimpleNamespace(encode=lambda text: text.split()),
+    )
+
+
 class _FakePipeline:
     def __init__(self, redis_store: dict[str, str]) -> None:
         self._redis_store = redis_store

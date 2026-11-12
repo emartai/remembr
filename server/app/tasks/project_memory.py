@@ -17,12 +17,13 @@ async def generate(memory_id: str, org_id: str, failed=False):
 
     async with AsyncSessionLocal() as db:
         await set_org_context(db, uuid.UUID(org_id))
-        row = await db.scalar(
-            select(ProjectMemory).where(
-                ProjectMemory.id == uuid.UUID(memory_id), ProjectMemory.org_id == uuid.UUID(org_id)
-            )
+        query = select(ProjectMemory).where(
+            ProjectMemory.id == uuid.UUID(memory_id), ProjectMemory.org_id == uuid.UUID(org_id)
         )
-        if not row or row.deleted_at:
+        if failed:
+            query = query.with_for_update()
+        row = await db.scalar(query)
+        if not row or row.deleted_at or row.embedding_status == "ready":
             return
         if failed:
             row.embedding_status = "failed"
@@ -44,7 +45,7 @@ async def generate(memory_id: str, org_id: str, failed=False):
                 .with_for_update()
                 .execution_options(populate_existing=True)
             )
-            if row.deleted_at:
+            if row.deleted_at or row.embedding_status == "ready":
                 return
             row.vector = vector
             row.embedding_model = provider.model

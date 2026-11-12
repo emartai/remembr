@@ -89,3 +89,22 @@ The MCP server publishes these instructions; also include them in a host's proje
 Test reports record protocol-level checks separately from actual host sessions. No hosted model API is needed for the deterministic graph and protocol checks. Host reasoning tests use each host's configured account and may require its login and network access.
 
 This combined sequence passed locally on 31 October 2026 with LangGraph 1.2.14, Claude Code 2.1.296, Codex CLI 0.166.0-alpha.5.1 and MCP Python SDK 1.30.0. Codex had a read-only space grant, and recalled a verification value that was not present in its prompt. Read-only writes were denied, grant removal took effect immediately, and revoked credentials were rejected. See the company workspace evidence in `openpeople/workspace/research/remembr-runtime-2026-10-31/` for client logs, changed container IDs and cleanup results. The checked configuration does not establish compatibility with every allowed client version.
+## Several accounts or client profiles
+
+Remembr credentials identify agent connections independently of the model
+provider's account. Give each Claude Code/Codex environment its own `rmsp_`
+principal and configure the environments with the same Remembr URL and space.
+Use distinct credentials for separate profiles even when they run on one laptop.
+Keep unrelated projects in separate spaces with explicit grants.
+
+This lets one connection save a finding, another correct it, and other authorized
+connections retrieve the correction. Revoking one principal does not revoke the
+others. Remembr does not copy provider chat histories, link subscriptions or
+combine account limits; agents must call its memory tools.
+
+The local HTTP integration probe verifies five independent credentials,
+authenticated correction authorship, revocation and persistence across API/worker
+restarts. That does not certify switching among real provider logins. A real
+client-profile acceptance test still needs the intended profile/configuration
+paths and must verify that each client launches its own configured MCP bridge.
+

@@ -231,7 +231,9 @@ class EpisodicMemory:
                 "limit": limit,
             },
         ):
-            query_vector, _ = await self._provider.generate_embedding(query)
+            from app.services.embeddings.base import embed_query
+
+            query_vector, query_dimensions = await embed_query(self._provider, query)
             vector_literal = _to_pgvector_literal(query_vector)
 
             tf_sql, tf_params = build_tag_filter_sql(tag_filters or [], alias="e")
@@ -251,7 +253,10 @@ class EpisodicMemory:
                 e.tags,
                 e.metadata,
                 e.created_at,
-                1 - (emb.vector <=> '{vector_literal}'::vector) AS similarity_score
+                CASE WHEN emb.model = :embedding_model
+                     AND vector_dims(emb.vector) = :embedding_dimensions
+                     THEN 1 - (emb.vector <=> '{vector_literal}'::vector)
+                     ELSE NULL END AS similarity_score
             FROM embeddings emb
             JOIN episodes e ON e.id = emb.episode_id
             WHERE e.org_id = :org_id
@@ -269,7 +274,10 @@ class EpisodicMemory:
               AND (CAST(:role AS VARCHAR) IS NULL OR e.role = CAST(:role AS VARCHAR))
               AND (CAST(:session_id AS UUID) IS NULL
                    OR e.session_id = CAST(:session_id AS UUID))
-              AND 1 - (emb.vector <=> '{vector_literal}'::vector) >= :score_threshold{tf_clause}
+              AND CASE WHEN emb.model = :embedding_model
+                       AND vector_dims(emb.vector) = :embedding_dimensions
+                       THEN 1 - (emb.vector <=> '{vector_literal}'::vector)
+                       ELSE NULL END >= :score_threshold{tf_clause}
             ORDER BY similarity_score DESC, e.created_at DESC, e.id
             LIMIT :limit OFFSET :offset
             """
@@ -288,6 +296,8 @@ class EpisodicMemory:
                     "user_id": _as_uuid(scope.user_id),
                     "agent_id": _as_uuid(scope.agent_id),
                     "score_threshold": score_threshold,
+                    "embedding_model": self._provider.model,
+                    "embedding_dimensions": query_dimensions,
                     "limit": limit,
                     "offset": offset,
                     "tags": tags or None,
@@ -332,7 +342,9 @@ class EpisodicMemory:
             },
         ):
             resolved_weights = weights or SearchWeights()
-            query_vector, _ = await self._provider.generate_embedding(query)
+            from app.services.embeddings.base import embed_query
+
+            query_vector, query_dimensions = await embed_query(self._provider, query)
             vector_literal = _to_pgvector_literal(query_vector)
 
             tf_sql, tf_params = build_tag_filter_sql(tag_filters or [], alias="e")
@@ -387,12 +399,18 @@ class EpisodicMemory:
             semantic_candidates AS (
                 SELECT
                     fe.id AS episode_id,
-                    1 - (emb.vector <=> '{vector_literal}'::vector) AS similarity_score
+                    CASE WHEN emb.model = :embedding_model
+                         AND vector_dims(emb.vector) = :embedding_dimensions
+                         THEN 1 - (emb.vector <=> '{vector_literal}'::vector)
+                         ELSE NULL END AS similarity_score
                 FROM embeddings emb
                 JOIN filtered_episodes fe ON fe.id = emb.episode_id
                 WHERE emb.org_id = :org_id
                   AND emb.deleted_at IS NULL
-                  AND 1 - (emb.vector <=> '{vector_literal}'::vector) >= :score_threshold
+                  AND CASE WHEN emb.model = :embedding_model
+                           AND vector_dims(emb.vector) = :embedding_dimensions
+                           THEN 1 - (emb.vector <=> '{vector_literal}'::vector)
+                           ELSE NULL END >= :score_threshold
             ),
             keyword_candidates AS (
                 SELECT
@@ -457,6 +475,8 @@ class EpisodicMemory:
                     "user_id": _as_uuid(scope.user_id),
                     "agent_id": _as_uuid(scope.agent_id),
                     "score_threshold": score_threshold,
+                    "embedding_model": self._provider.model,
+                    "embedding_dimensions": query_dimensions,
                     "tags": tags or None,
                     "from_time": from_time,
                     "to_time": to_time,

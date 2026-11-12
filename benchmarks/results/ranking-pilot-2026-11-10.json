@@ -1,0 +1,124 @@
+{
+  "scope": "Offline source-only ranking diagnostics; no API latency or superiority claim",
+  "date": "2026-11-10",
+  "protocol": {
+    "version": 2,
+    "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+    "embedding_digest": "ae3dba817a77ebc3d953c00121d5817de015c77eeb969a114df46a1ffb1eb6fd",
+    "prefixes": true,
+    "turns_per_chunk": 8,
+    "context_chars": 12000,
+    "compact_context_chars": 10000,
+    "development_indices": [
+      0
+    ],
+    "confirmation_indices": [
+      1,
+      2
+    ],
+    "question_selection": "all answerable questions with annotated evidence",
+    "variants": [
+      "cosine_8",
+      "rrf_8",
+      "mmr_8",
+      "rrf_mmr_8",
+      "cosine_16",
+      "rrf_compact_8",
+      "rrf_mmr_compact_8"
+    ],
+    "rrf_k": 60,
+    "candidate_depth": 40,
+    "mmr_lambda": 0.85,
+    "selection": "higher multi-hop recall, no overall recall loss, <=10% more mean tokens; choose highest multi-hop recall then all-evidence then fewer tokens"
+  },
+  "development": {
+    "cosine_8": {
+      "questions": 150,
+      "recall": 0.7394444444444445,
+      "all_evidence": 0.6733333333333333,
+      "multi_hop_questions": 32,
+      "multi_hop_recall": 0.4505208333333333,
+      "multi_hop_all_evidence": 0.1875,
+      "mean_context_tokens": 2236.6466666666665
+    },
+    "rrf_8": {
+      "questions": 150,
+      "recall": 0.83,
+      "all_evidence": 0.78,
+      "multi_hop_questions": 32,
+      "multi_hop_recall": 0.5625,
+      "multi_hop_all_evidence": 0.34375,
+      "mean_context_tokens": 2544.3933333333334
+    },
+    "mmr_8": {
+      "questions": 150,
+      "recall": 0.7433333333333333,
+      "all_evidence": 0.68,
+      "multi_hop_questions": 32,
+      "multi_hop_recall": 0.4375,
+      "multi_hop_all_evidence": 0.1875,
+      "mean_context_tokens": 2241.7266666666665
+    },
+    "rrf_mmr_8": {
+      "questions": 150,
+      "recall": 0.8316666666666667,
+      "all_evidence": 0.7866666666666666,
+      "multi_hop_questions": 32,
+      "multi_hop_recall": 0.5703125,
+      "multi_hop_all_evidence": 0.375,
+      "mean_context_tokens": 2537.826666666667
+    },
+    "cosine_16": {
+      "questions": 150,
+      "recall": 0.7894444444444444,
+      "all_evidence": 0.7133333333333334,
+      "multi_hop_questions": 32,
+      "multi_hop_recall": 0.5286458333333334,
+      "multi_hop_all_evidence": 0.21875,
+      "mean_context_tokens": 3008.806666666667
+    },
+    "rrf_compact_8": {
+      "questions": 150,
+      "recall": 0.8261111111111111,
+      "all_evidence": 0.7733333333333333,
+      "multi_hop_questions": 32,
+      "multi_hop_recall": 0.5442708333333334,
+      "multi_hop_all_evidence": 0.3125,
+      "mean_context_tokens": 2363.9933333333333
+    },
+    "rrf_mmr_compact_8": {
+      "questions": 150,
+      "recall": 0.8294444444444444,
+      "all_evidence": 0.7866666666666666,
+      "multi_hop_questions": 32,
+      "multi_hop_recall": 0.5598958333333334,
+      "multi_hop_all_evidence": 0.375,
+      "mean_context_tokens": 2363.366666666667
+    }
+  },
+  "confirmation": {
+    "cosine_8": {
+      "questions": 233,
+      "recall": 0.7405579399141631,
+      "all_evidence": 0.6824034334763949,
+      "multi_hop_questions": 42,
+      "multi_hop_recall": 0.513095238095238,
+      "multi_hop_all_evidence": 0.19047619047619047,
+      "mean_context_tokens": 2184.343347639485
+    },
+    "rrf_mmr_compact_8": {
+      "questions": 233,
+      "recall": 0.8246065808297568,
+      "all_evidence": 0.7725321888412017,
+      "multi_hop_questions": 42,
+      "multi_hop_recall": 0.5924603174603175,
+      "multi_hop_all_evidence": 0.30952380952380953,
+      "mean_context_tokens": 2340.1459227467813
+    }
+  },
+  "development_iterations": 2,
+  "selection": {
+    "winner": "rrf_mmr_compact_8",
+    "development_sha256": "d71bac301376fc8461ee04ab5a1b34a83d112055e437e503588050195f7da5d5"
+  }
+}
