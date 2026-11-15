@@ -8,6 +8,12 @@ embedding path. The agent's own model/account remains the developer's choice.
 
 ## Setup
 
+Before inviting participants, complete the benchmark report, verify the merged
+server from a clean installation, publish and install-check both SDK packages,
+and finish the quickstart, compatibility notes and demo. The managed-cloud
+decision follows developer usage. Package publication and the benchmark report
+are still outstanding launch work.
+
 1. Use the maintainer-verified merged server commit and record `git rev-parse
    HEAD`. Build from that source. The original v0.2.1 server tag predates migration
    010; see [verification](verification.md). Preserve existing volumes when

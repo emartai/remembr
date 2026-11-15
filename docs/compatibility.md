@@ -1,5 +1,13 @@
 # Verified environment
 
+The 0.2.2 source candidate includes the fixes and optional ranking introduced
+after the original 0.2.1 server tag. Python SDK 0.2.1 remains compatible with
+the current shared-memory API. npm 0.2.0 lacks that API; use the current
+TypeScript source package until 0.2.2 publication completes.
+The fresh-install acceptance on 12 November verified corrections across API
+and worker recreation and denial of a revoked second agent's credential.
+See the [recorded CI run](https://github.com/emartai/remembr/actions/runs/43182769513).
+
 See the public [verification record](verification.md) for acceptance results and limits. Company-workspace paths below identify private maintainer records and are not required to use Remembr.
 
 Local verification on 29 October 2026 used the following versions. These are observed test environments, not a certification of every version allowed by dependency ranges.

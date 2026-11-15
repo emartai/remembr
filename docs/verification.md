@@ -1,5 +1,57 @@
 # Verification record
 
+## 0.2.2 candidate package verification — 16 November 2026
+
+The TypeScript tarball, Python wheel and Python source distribution built
+outside the checkout. An isolated npm consumer loaded the tarball through
+CommonJS and ESM and exposed the five shared-space methods. An isolated wheel
+consumer imported the project API and MCP bridge. Twenty source and manifest
+files were byte-compared with the current working tree on 16 November.
+
+The build reused the installed TypeScript compiler and Python dependency
+tooling. This verifies package contents and importability. The fresh Linux
+server checks below supply the network-installation and live API evidence.
+These candidate packages have not been published.
+
+| Artifact | SHA-256 |
+| --- | --- |
+| remembr-sdk-0.2.2.tgz | `4ed3b06f21470f8e5a4cf7660a0ab2a387e2b10d31b3bdf039c7fe3e2db236c5` |
+| remembr-0.2.2-py3-none-any.whl | `e83f7cb34d741c8f6007a310f0904650897578c7088111341d9cda508545e10e` |
+| remembr-0.2.2.tar.gz | `a0f5f309f2e3a2808ead7c97994dd73b3a3f4a823f2b61e18025723cdd8729d5` |
+
+## Release candidate verification — 12 November 2026
+
+[PR #75](https://github.com/emartai/remembr/pull/75) merged at
+`db027065bb06525deb50fac27612b81b4ec87156` after 25 applicable checks passed.
+The [fresh Linux installation](https://github.com/emartai/remembr/actions/runs/43182769513)
+used the published Python SDK and local Ollama. It verified two independent
+agent credentials, source and author metadata, a correction surviving API and
+worker recreation, and revocation of the reviewing credential while the first
+agent retained access to the correction.
+
+The [runner-local evaluation](https://github.com/emartai/remembr/actions/runs/43182769457)
+passed ten judge controls and completed all twenty reader/judge cases. On its
+ten paired questions, the cosine baseline answered five correctly and the
+experimental ranker answered four correctly. The experimental ranker remains
+opt-in. Its improved supporting-evidence recall on 233 questions has not
+established an answer-quality improvement or competitor superiority.
+
+On 14 November 2026, the registries served Python `remembr==0.2.1` and npm
+`@remembr/sdk@0.2.0`. The updated TypeScript source package is version 0.2.1;
+its publication remains pending authenticated npm publish access. Use the
+merged server source above to include migration 010 and the latest fixes.
+
+A fresh package probe on 14 November built both SDKs from an archive of the
+verified PR head `7ff787509f0fc8974a9463862d7801ba02fac87c`. The resulting
+TypeScript tarball passed installed CommonJS and ESM checks for all five
+shared-space methods. The Python wheel and source distribution built, and an
+isolated wheel consumer imported the project API and MCP bridge. This probe
+reused installed compiler and Python dependency tooling; the Linux acceptance
+above provides the clean network-installation evidence. Package verification
+does not establish npm publication.
+
+## Earlier acceptance — 1 November 2026
+
 This records local acceptance of the source and SDK 0.2.1 candidates as of 1 November 2026. The source was subsequently merged as PR #73 and tagged v0.2.1; Python 0.2.1 is published on PyPI. npm 0.2.1 publication is pending. These checks do not establish production certification.
 
 | Area | Completed verification |

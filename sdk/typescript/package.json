@@ -1,6 +1,6 @@
 {
   "name": "@remembr/sdk",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Persistent memory infrastructure for AI agents",
   "author": "Emmanuel Nwanguma",
   "license": "MIT",

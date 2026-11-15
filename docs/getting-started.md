@@ -1,6 +1,9 @@
 # Start using Remembr
 
-Remembr 0.2.1 is released on GitHub and PyPI. The TypeScript 0.2.1 source is available, but its npm publication is pending. Remembr currently runs on your own machine or server; a hosted Remembr Cloud service is planned and is not yet available.
+Python SDK 0.2.1 is published on PyPI and works with the current server.
+The current source prepares version 0.2.2 for the server and both SDKs.
+Publication of those candidate packages is pending; npm 0.2.0 lacks the shared-project APIs.
+Remembr currently runs on your own machine or server. A hosted service is planned.
 
 Use the current server source, which includes migration 010 fixing fresh local-model installs. That fix is not included in the earlier v0.2.1 server tag; the published Python SDK 0.2.1 works with the corrected server.
 
@@ -90,7 +93,7 @@ python -m pip install "remembr[mcp]==0.2.1"
 
 The client launches `remembr-mcp` or `python -m remembr.mcp`. Supply `REMEMBR_URL=http://localhost:8000`, the space UUID and that client's own principal credential. The bridge exposes store, search, get and processing-status tools. Installing it does not automatically enable memory inside a host.
 
-TypeScript shared-space APIs require the 0.2.1 source package while npm publication is pending. From the repository root:
+TypeScript shared-space APIs require the current source package while npm publication is pending. From the repository root:
 
 ```sh
 cd sdk/typescript
@@ -99,7 +102,7 @@ npm run build
 npm pack
 ```
 
-In your application directory, install the resulting archive with `npm install /absolute/path/to/remembr-sdk-0.2.1.tgz`. The older npm 0.2.0 package does not include `client.projects`. See [shared project memory](shared-project-memory.md) for its TypeScript methods and permission rules.
+In your application directory, install the resulting archive with `npm install /absolute/path/to/remembr-sdk-0.2.2.tgz`. The older npm 0.2.0 package does not include `client.projects`. See [shared project memory](shared-project-memory.md) for its TypeScript methods and permission rules.
 
 ## Private/session memory instead
 
