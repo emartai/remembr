@@ -67,6 +67,8 @@ def export(work):
             "options": frozen["options"],
             "cases_sha256": frozen["cases_sha256"],
             "reader_context_chars": frozen["reader_context_chars"],
+            "variants": frozen.get("variants"),
+            "prompt_template_allowance": frozen.get("prompt_template_allowance"),
         }
     if answer:
         report["answer_pilot_valid"] = answer["judge_sanity_passed"] and all(
@@ -120,7 +122,7 @@ def export(work):
         ]
     lines += [
         "",
-        "Small related models and a ten-question custom rubric do not establish official accuracy. Raw cases, credentials, vectors and model weights are not included in this artifact.",
+        "Ten paired questions with three retrieval arms use a custom rubric. Model-native prompt counts and conservative byte bounds guard the context window. Raw cases, credentials, vectors and model weights are not included in this artifact.",
     ]
     markdown = "\n".join(lines) + "\n"
     (public / "quality-summary.md").write_text(markdown, encoding="utf-8")

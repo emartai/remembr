@@ -1,5 +1,6 @@
 """Local scoring must preserve model identity and failure denominators."""
 
+import hashlib
 import json
 import tempfile
 import unittest
@@ -10,14 +11,43 @@ from unittest.mock import patch
 from benchmarks.local_answer_pilot import (
     OPTIONS,
     append,
+    complete,
     grade,
     judge_messages,
     summarize,
     verify_models,
 )
+from benchmarks.locomo import reader_messages
 
 
 class LocalAnswerPilotTests(unittest.TestCase):
+    def test_oversized_multibyte_prompt_is_rejected_before_request(self):
+        class Http:
+            def call(self, *args):
+                self.fail("Oversized prompt reached inference")
+
+        with self.assertRaises(ValueError):
+            complete(Http(), "qwen3:1.7b", [{"role": "user", "content": "界" * 4000}])
+
+    def test_native_token_counts_are_required_and_window_overflow_is_rejected(self):
+        class Http:
+            def __init__(self, tokens):
+                self.tokens = tokens
+
+            def call(self, *args):
+                return {
+                    "message": {"content": "answer"},
+                    "prompt_eval_count": self.tokens,
+                }
+
+        messages = [{"role": "user", "content": "question"}]
+        for tokens in (None, 0, OPTIONS["num_ctx"]):
+            with self.assertRaises(ValueError):
+                complete(Http(tokens), "qwen3:1.7b", messages)
+        result = complete(Http(20), "qwen3:1.7b", messages)
+        self.assertEqual(result["prompt_tokens"], 20)
+        self.assertGreater(result["prompt_token_upper_bound"], 20)
+
     def test_abstention_verdict_uses_only_question_and_candidate_reply(self):
         with patch("benchmarks.local_answer_pilot.complete") as complete:
             for label, expected in (
@@ -56,12 +86,15 @@ class LocalAnswerPilotTests(unittest.TestCase):
 
         manifest = {
             "options": dict(OPTIONS),
+            "reader_prompt_sha256": hashlib.sha256(
+                json.dumps(reader_messages("question", "context")).encode()
+            ).hexdigest(),
             "reader": {"name": "reader", "digest": "reader-digest"},
             "judge": {"name": "judge", "digest": "judge-digest"},
         }
         with self.assertRaises(ValueError):
             verify_models(Http(), manifest)
-        manifest["options"]["num_ctx"] = 8192
+        manifest["options"]["num_ctx"] = 2048
         with self.assertRaises(ValueError):
             verify_models(Http(), manifest)
 
