@@ -213,7 +213,7 @@ def prepare(args, work, http):
     manifest = {
         "dataset_sha256": DATASET_SHA256,
         "conversation_indices": [1, 2],
-        "questions_per_conversation": 5,
+        "questions_per_conversation": args.questions_per_conversation,
         "selection_seed": 42,
         "reader_context_chars": 4000,
         "variants": ["cosine_8", "bm25_8", "rrf_mmr_compact_8"],
@@ -255,7 +255,7 @@ def prepare(args, work, http):
         sample = samples[index]
         documents = [c["content"] for c in chunks(sample, 8)]
         vectors = [vector("search_document: " + d) for d in documents]
-        for question in select_questions([sample], 5, 42):
+        for question in select_questions([sample], args.questions_per_conversation, 42):
             # Adversarial queries were excluded from retrieval-only scoring; embed
             # their question text now, before loading the reader model.
             text = "search_query: " + question["question"]
@@ -510,6 +510,9 @@ def summarize(work):
             "expected_questions": expected,
             "reader_attempts": len(completed),
             "reader_errors": sum(bool(r.get("error")) for r in completed),
+            "reader_output_limit_hits": sum(
+                r.get("done_reason") == "length" for r in completed
+            ),
             "judge_attempts": len(selected),
             "invalid_judgments": sum(r["correct"] is None for r in selected),
             "correct_count": sum(r["correct"] is True for r in selected),
@@ -538,6 +541,26 @@ def summarize(work):
             mean_prompt_tokens=statistics.mean(tokens) if tokens else None,
             max_prompt_tokens=max(tokens) if tokens else None,
         )
+        report["variants"][variant]["categories"] = {
+            str(category): {
+                "questions": sum(
+                    r.get("category") == category
+                    for r in cases
+                    if r["variant"] == variant
+                ),
+                "correct": sum(
+                    r.get("category") == category and r["correct"] is True
+                    for r in selected
+                ),
+            }
+            for category in sorted(
+                {
+                    r["category"]
+                    for r in cases
+                    if r["variant"] == variant and "category" in r
+                }
+            )
+        }
     write_json(work / "summary.json", report)
     print(json.dumps(report, indent=2))
 
@@ -552,6 +575,9 @@ def main():
     parser.add_argument("--data", type=Path)
     parser.add_argument("--reader-model", default="qwen3:1.7b")
     parser.add_argument("--judge-model", default="qwen3:8b")
+    parser.add_argument(
+        "--questions-per-conversation", type=int, choices=(5, 25), default=5
+    )
     args = parser.parse_args()
     work = state_paths(args.work_dir)
     http = Http("http://127.0.0.1:11434", interval=0, timeout=180)
