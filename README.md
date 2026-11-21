@@ -27,9 +27,9 @@ See [Verified environment](docs/compatibility.md) for tested SDK/framework versi
 
 ## Release status
 
-Version 0.2.1 is [released on GitHub](https://github.com/emartai/remembr/releases/tag/v0.2.1) and [published on PyPI](https://pypi.org/project/remembr/0.2.1/). Current source prepares the server and both SDKs for version 0.2.2; publication is pending. npm 0.2.0 does not include the new project APIs. Build the TypeScript package from source to use shared spaces today. Remembr Cloud is planned, not yet available.
+Version 0.2.2 is available on [GitHub](https://github.com/emartai/remembr/releases/tag/v0.2.2), [PyPI](https://pypi.org/project/remembr/0.2.2/) and [npm](https://www.npmjs.com/package/@remembr/sdk/v/0.2.2). Both SDKs include shared-space APIs.
 
-Use the current server source for migration 010, which fixes a legacy vector-index constraint affecting fresh local-model installations. The earlier v0.2.1 server tag does not include that fix; the published Python SDK remains 0.2.1.
+The 0.2.2 server includes migration 010, which fixes a legacy vector index that prevented fresh installations from using the default local embedding model.
 
 Follow [Start using Remembr](docs/getting-started.md) to create your account, choose private or shared memory, connect an agent and retrieve its first memory.
 
@@ -44,12 +44,12 @@ browse and manage permitted memory. These additions are included in the 0.2.1 se
 ## Install The SDKs
 
 ```bash
-python -m pip install "remembr==0.2.1"
+python -m pip install "remembr==0.2.2"
 # For MCP clients:
-python -m pip install "remembr[mcp]==0.2.1"
+python -m pip install "remembr[mcp]==0.2.2"
 ```
 
-For TypeScript, use the source-package instructions in [getting started](docs/getting-started.md#5-connect-an-mcp-client-or-typescript-app) until npm 0.2.2 is published.
+For TypeScript, run `npm install @remembr/sdk@0.2.2`.
 
 ## Python Example
 

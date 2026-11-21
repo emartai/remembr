@@ -1,6 +1,6 @@
 # Remembr local quickstart
 
-For the complete account → agent → first shared-memory walkthrough, start with [Start using Remembr](docs/getting-started.md). Python 0.2.1 is published and works with the current server. Source version 0.2.2 is being prepared for both SDKs; publication is pending. A server is required in addition to the SDK.
+For the complete account → agent → first shared-memory walkthrough, start with [Start using Remembr](docs/getting-started.md). Use the published 0.2.2 SDKs with the 0.2.2 server.
 
 Run these commands from a source checkout with Python 3.11+, Docker Compose v2 and a running Linux container engine:
 
@@ -27,21 +27,18 @@ Read [Local setup and release checks](docs/local-setup.md) for startup order, co
 Install the published Python SDK into your application's virtual environment:
 
 ```sh
-python -m pip install "remembr==0.2.1"
+python -m pip install "remembr==0.2.2"
 # Include the optional MCP bridge when connecting MCP-capable agents:
-python -m pip install 'remembr[mcp]==0.2.1'
+python -m pip install 'remembr[mcp]==0.2.2'
 ```
 
-For TypeScript shared spaces, build the 0.2.2 candidate source while npm publication is pending. From the repository root:
+For TypeScript, run this from your application directory:
 
 ```sh
-cd sdk/typescript
-npm ci
-npm run build
-npm pack
+npm install @remembr/sdk@0.2.2
 ```
 
-The npm command creates a local package archive; install it into your application with `npm install /path/to/remembr-sdk-0.2.2.tgz`. npm 0.2.0 does not contain the shared-project APIs. For Python development changes, use `python -m pip install './sdk/python[mcp]'` from the checkout.
+For Python development changes, use `python -m pip install './sdk/python[mcp]'` from the checkout.
 
 Register through `POST /api/v1/auth/register` with `email`, `password` and `org_name`. Use the returned access token as a bearer token for `POST /api/v1/api-keys` with a `name`. Supply the resulting API key to the SDK. The [smoke test](scripts/smoke_test.py) contains an executable example of this sequence without printing credentials.
 

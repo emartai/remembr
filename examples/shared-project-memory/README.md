@@ -1,7 +1,7 @@
 # Shared memory across independent processes
 
 Start the current Remembr server, then create a project, space and separate
-credentials in `/explorer`. Install the published `remembr[mcp]==0.2.1` package
+credentials in `/explorer`. Install the published `remembr[mcp]==0.2.2` package
 or the current source SDK, and install LangGraph in the environment used for
 `langgraph_writer.py`. Each agent needs read and write grants on the same
 dedicated demo space.
@@ -36,8 +36,7 @@ Record actual tool outputs when making a demo video. Agent prose alone does
 not prove retrieval. Stop the local stack when finished and preserve volumes
 if you want to inspect the example again.
 
-The published Python SDK includes these shared-space operations. The current
-0.2.2 candidate also prepares the TypeScript package for publication.
+Both published 0.2.2 SDKs include these shared-space operations.
 See [agent connections](../../docs/agent-connections.md) and
 [shared-memory API](../../docs/shared-project-memory.md) for permissions, retry
 keys, status checks and limitations.

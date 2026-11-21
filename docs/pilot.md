@@ -11,16 +11,14 @@ embedding path. The agent's own model/account remains the developer's choice.
 Before inviting participants, complete the benchmark report, verify the merged
 server from a clean installation, publish and install-check both SDK packages,
 and finish the quickstart, compatibility notes and demo. The managed-cloud
-decision follows developer usage. Package publication and the benchmark report
-are still outstanding launch work.
+decision follows developer usage.
 
 1. Use the maintainer-verified merged server commit and record `git rev-parse
    HEAD`. Build from that source. The original v0.2.1 server tag predates migration
    010; see [verification](verification.md). Preserve existing volumes when
    updating, and run the documented migrations.
-2. Follow [Start using Remembr](getting-started.md) with the published Python
-   SDK/MCP bridge. npm publication of the updated shared-project SDK is still
-   pending; TypeScript users can use the HTTP API or the verified source package.
+2. Follow [Start using Remembr](getting-started.md) with the published 0.2.2
+   Python SDK/MCP bridge or TypeScript SDK.
 3. Create one project and a dedicated pilot space. Issue a different principal
    credential to each agent connection; grant only the access each connection
    needs. Follow [agent connections](agent-connections.md).

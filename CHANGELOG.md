@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### 0.2.2 candidate
+## [0.2.2] - 2026-11-21
 
-- Complete public account-to-agent onboarding and distinguish the published Python package from pending npm publication.
+- Complete public account-to-agent onboarding with Python and TypeScript SDKs.
 - Verify the canonical bundled-Ollama stack on a clean runner, including the published SDK example and restart recall.
 - Add migration 010 to remove a stale 1024-dimensional HNSW index that rejected the default 768-dimensional model. Stored data is retained; retrieval uses exact vector search.
 - Retry failed shared-memory embeddings while retaining the memory ID, source and revision history.
@@ -21,7 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Verify corrections shared by two independent credentials across container recreation and deny a revoked credential.
 - Add reproducible local-model evaluation and retrieval reports. Current results establish neither improved answer accuracy nor competitor superiority.
 
-Candidate packages are version 0.2.2. Publication is pending. See the
+Both SDKs are published. See the
 [verification record](docs/verification.md) for completed checks and limits.
 
 ## [0.2.1] - 2026-11-02
