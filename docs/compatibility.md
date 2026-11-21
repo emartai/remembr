@@ -1,9 +1,8 @@
 # Verified environment
 
-The 0.2.2 source candidate includes the fixes and optional ranking introduced
-after the original 0.2.1 server tag. Python SDK 0.2.1 remains compatible with
-the current shared-memory API. npm 0.2.0 lacks that API; use the current
-TypeScript source package until 0.2.2 publication completes.
+The 0.2.2 server includes migration 010 and optional compact ranking.
+Use Python `remembr==0.2.2` or TypeScript `@remembr/sdk@0.2.2` for the
+shared-memory API.
 The fresh-install acceptance on 12 November verified corrections across API
 and worker recreation and denial of a revoked second agent's credential.
 See the [recorded CI run](https://github.com/emartai/remembr/actions/runs/43182769513).

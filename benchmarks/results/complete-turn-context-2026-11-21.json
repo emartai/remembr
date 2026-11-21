@@ -1,0 +1,80 @@
+{
+  "scope": "Exploratory cached retrieval on previously examined conversations",
+  "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+  "embedding_digest": "ae3dba817a77ebc3d953c00121d5817de015c77eeb969a114df46a1ffb1eb6fd",
+  "context_chars": 4000,
+  "methods": [
+    {
+      "ranker": "cosine_8",
+      "packing": "sliced",
+      "questions": 233,
+      "recall": 0.6064377682403433,
+      "all_evidence": 0.5579399141630901,
+      "mean_chars": 3944.107296137339
+    },
+    {
+      "ranker": "cosine_8",
+      "packing": "complete_turns",
+      "questions": 233,
+      "recall": 0.6107296137339056,
+      "all_evidence": 0.5622317596566524,
+      "mean_chars": 3918.716738197425
+    },
+    {
+      "ranker": "cosine_8",
+      "packing": "query_first_turns",
+      "questions": 233,
+      "recall": 0.6352646638054363,
+      "all_evidence": 0.5836909871244635,
+      "mean_chars": 3926.274678111588
+    },
+    {
+      "ranker": "bm25",
+      "packing": "sliced",
+      "questions": 233,
+      "recall": 0.7357653791130186,
+      "all_evidence": 0.6995708154506438,
+      "mean_chars": 3991.1244635193134
+    },
+    {
+      "ranker": "bm25",
+      "packing": "complete_turns",
+      "questions": 233,
+      "recall": 0.7357653791130186,
+      "all_evidence": 0.6995708154506438,
+      "mean_chars": 3965.931330472103
+    },
+    {
+      "ranker": "bm25",
+      "packing": "query_first_turns",
+      "questions": 233,
+      "recall": 0.7123748211731045,
+      "all_evidence": 0.6652360515021459,
+      "mean_chars": 3979.304721030043
+    },
+    {
+      "ranker": "rrf_mmr_compact_8",
+      "packing": "sliced",
+      "questions": 233,
+      "recall": 0.7187410586552218,
+      "all_evidence": 0.6738197424892703,
+      "mean_chars": 3988.7982832618027
+    },
+    {
+      "ranker": "rrf_mmr_compact_8",
+      "packing": "complete_turns",
+      "questions": 233,
+      "recall": 0.7187410586552218,
+      "all_evidence": 0.6738197424892703,
+      "mean_chars": 3960.961373390558
+    },
+    {
+      "ranker": "rrf_mmr_compact_8",
+      "packing": "query_first_turns",
+      "questions": 233,
+      "recall": 0.7048640915593706,
+      "all_evidence": 0.648068669527897,
+      "mean_chars": 3972.3690987124464
+    }
+  ]
+}
