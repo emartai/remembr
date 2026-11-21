@@ -66,12 +66,14 @@ jobs:
         run: |
           npm install -g openclaw@2026.11.6
           openclaw --version
-          python -m pip install 'hermes-agent[mcp] @ git+https://github.com/NousResearch/hermes-agent.git@v0.23.3'
+          python -m pip install uv
+          git clone --depth 1 --branch v0.23.3 https://github.com/NousResearch/hermes-agent.git "$RUNNER_TEMP/hermes-agent"
+          uv sync --project "$RUNNER_TEMP/hermes-agent" --frozen --extra mcp --python "$(command -v python)"
 
       - name: Verify OpenClaw to Hermes to OpenClaw
         if: inputs.verify_agent_hosts
         run: |
-          python scripts/verify_mcp_hosts.py --bridge "$RUNNER_TEMP/remembr-mcp/bin/python"
+          "$RUNNER_TEMP/hermes-agent/.venv/bin/python" scripts/verify_mcp_hosts.py --bridge "$RUNNER_TEMP/remembr-mcp/bin/python"
 
       - name: Record runtime versions and migrations
         run: |

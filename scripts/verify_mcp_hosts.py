@@ -293,7 +293,9 @@ def verify(bridge):
                 )
             except Exception as error:
                 log.seek(0)
-                diagnostic = log.read()[-5000:]
+                diagnostic = f"{type(error).__name__}: {error}\n" + log.read()[-5000:]
+                if isinstance(error, HTTPError):
+                    diagnostic += error.read().decode(errors="replace")[-2500:]
                 if isinstance(error, subprocess.CalledProcessError):
                     diagnostic += (error.stderr or "")[-2500:]
                 for secret in [
