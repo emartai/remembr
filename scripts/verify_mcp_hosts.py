@@ -171,14 +171,8 @@ def verify(bridge):
             "HERMES_HOME": str(home / "hermes"),
         }
         with (home / "gateway.log").open("w+", encoding="utf-8") as log:
-            gateway = subprocess.Popen(
-                ["openclaw", "gateway", "run", "--port", str(PORT)],
-                env=env,
-                stdout=log,
-                stderr=subprocess.STDOUT,
-            )
+            gateway = None
             try:
-                wait_for(lambda: http("GET", f"http://127.0.0.1:{PORT}/health"))
                 subprocess.run(
                     ["openclaw", "mcp", "doctor", "remembr", "--probe"],
                     env=env,
@@ -187,6 +181,13 @@ def verify(bridge):
                     timeout=90,
                     check=True,
                 )
+                gateway = subprocess.Popen(
+                    ["openclaw", "gateway", "run", "--port", str(PORT)],
+                    env=env,
+                    stdout=log,
+                    stderr=subprocess.STDOUT,
+                )
+                wait_for(lambda: http("GET", f"http://127.0.0.1:{PORT}/readyz"))
 
                 def openclaw(tool, arguments, field):
                     reply = http(
@@ -297,7 +298,7 @@ def verify(bridge):
                 if isinstance(error, HTTPError):
                     diagnostic += error.read().decode(errors="replace")[-2500:]
                 if isinstance(error, subprocess.CalledProcessError):
-                    diagnostic += (error.stderr or "")[-2500:]
+                    diagnostic += (error.stdout or "")[-2500:] + (error.stderr or "")[-2500:]
                 for secret in [
                     token,
                     owner,
@@ -309,12 +310,13 @@ def verify(bridge):
                     f"Host probe failed: {type(error).__name__}"
                 ) from None
             finally:
-                gateway.terminate()
-                try:
-                    gateway.wait(timeout=10)
-                except subprocess.TimeoutExpired:
-                    gateway.kill()
-                    gateway.wait()
+                if gateway is not None:
+                    gateway.terminate()
+                    try:
+                        gateway.wait(timeout=10)
+                    except subprocess.TimeoutExpired:
+                        gateway.kill()
+                        gateway.wait()
 
 
 if __name__ == "__main__":
