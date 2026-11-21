@@ -1,15 +1,16 @@
 # Start using Remembr
 
-Remembr 0.2.1 is released on GitHub and PyPI. The TypeScript 0.2.1 source is available, but its npm publication is pending. Remembr currently runs on your own machine or server; a hosted Remembr Cloud service is planned and is not yet available.
+Use Remembr 0.2.2 for the self-hosted server and both SDKs. The server
+includes migration 010 for fresh local-model installs. The default Docker setup uses local Ollama embeddings for retrieval. Remembr needs no external inference API key in this setup. Each agent uses its own configured model for reasoning.
 
-Use the current server source, which includes migration 010 fixing fresh local-model installs. That fix is not included in the earlier v0.2.1 server tag; the published Python SDK 0.2.1 works with the corrected server.
+To reproduce a handoff across several clients, follow the [shared-memory demo](https://github.com/emartai/remembr/tree/main/examples/shared-project-memory).
 
 ## 1. Start the memory server
 
 You need Python 3.11+, Docker Compose v2, a running Linux container engine and internet access for the first image/model downloads. Installing the SDK alone does not start the server.
 
 ```sh
-git clone https://github.com/emartai/remembr.git
+git clone --branch v0.2.2 https://github.com/emartai/remembr.git
 cd remembr
 python scripts/local_setup.py
 python scripts/smoke_test.py
@@ -43,7 +44,7 @@ In the explorer, create a project, create a space inside it, and create an agent
 Install the published Python SDK in your application's virtual environment:
 
 ```sh
-python -m pip install "remembr==0.2.1"
+python -m pip install "remembr==0.2.2"
 ```
 
 Set `REMEMBR_API_KEY` to the agent's `rmsp_` credential and `REMEMBR_SPACE_ID` to the space UUID in the environment of your application. The example reads both without hardcoding them:
@@ -85,21 +86,18 @@ Return to the explorer to inspect the content, source, authenticated author and 
 For MCP-capable clients, install the published extra and follow [agent connections](agent-connections.md):
 
 ```sh
-python -m pip install "remembr[mcp]==0.2.1"
+python -m pip install "remembr[mcp]==0.2.2"
 ```
 
 The client launches `remembr-mcp` or `python -m remembr.mcp`. Supply `REMEMBR_URL=http://localhost:8000`, the space UUID and that client's own principal credential. The bridge exposes store, search, get and processing-status tools. Installing it does not automatically enable memory inside a host.
 
-TypeScript shared-space APIs require the 0.2.1 source package while npm publication is pending. From the repository root:
+Install the TypeScript SDK from your application directory:
 
 ```sh
-cd sdk/typescript
-npm ci
-npm run build
-npm pack
+npm install @remembr/sdk@0.2.2
 ```
 
-In your application directory, install the resulting archive with `npm install /absolute/path/to/remembr-sdk-0.2.1.tgz`. The older npm 0.2.0 package does not include `client.projects`. See [shared project memory](shared-project-memory.md) for its TypeScript methods and permission rules.
+See [shared project memory](shared-project-memory.md) for TypeScript methods and permission rules.
 
 ## Private/session memory instead
 

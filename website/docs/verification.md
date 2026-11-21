@@ -1,6 +1,6 @@
 # Verification record
 
-This records local acceptance of the source and SDK 0.2.1 candidates as of 1 November 2026. The source was subsequently merged as PR #73 and tagged v0.2.1; Python 0.2.1 is published on PyPI. npm 0.2.1 publication is pending. These checks do not establish production certification.
+This records local acceptance of the source and SDK 0.2.1 candidates as of 1 November 2026. The source was subsequently merged as PR #73 and tagged v0.2.1; Python 0.2.1 is published on PyPI. The current installation path is in [Start using Remembr](getting-started.md). These checks do not establish production certification.
 
 | Area | Completed verification |
 | --- | --- |

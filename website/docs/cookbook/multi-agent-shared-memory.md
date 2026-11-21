@@ -1,6 +1,10 @@
 # Multi-Agent Shared Memory
 
-Use one session for the workflow run and structured tags per agent so each node can retrieve only the memory slice it needs.
+For independent agents or hosts, use a [shared project space](../shared-project-memory.md). Give each connection its own credential. Follow the [agent connection guide](../agent-connections.md#acceptance-sequence) to run the LangGraph, Claude Code and Codex handoff.
+
+## Coordinating nodes within one workflow
+
+Within a single application, use private session memory and structured tags so each node can retrieve the context it needs. This example uses one application credential and one session.
 
 ## Why it helps
 
@@ -10,7 +14,7 @@ Use one session for the workflow run and structured tags per agent so each node 
 
 ## Example
 
-See the flagship runnable example in [`examples/langgraph-multi-agent`](../index.md).
+See the [LangGraph workflow example](https://github.com/emartai/remembr/tree/main/examples/langgraph-multi-agent).
 
 ```python
 import asyncio

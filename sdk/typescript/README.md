@@ -4,17 +4,11 @@
 
 ## Install
 
-```bash
-# From a Remembr 0.2.1 source checkout:
-cd sdk/typescript
-npm ci
-npm run build
-npm pack
-# In your application directory:
-npm install /absolute/path/to/remembr-sdk-0.2.1.tgz
+```sh
+npm install @remembr/sdk@0.2.2
 ```
 
-The 0.2.1 npm publication is pending. The published 0.2.0 package supports private/session memory, but does not include `client.projects`. Follow [getting started](https://github.com/emartai/remembr/blob/main/docs/getting-started.md) to start a server, create an account and issue credentials. For shared spaces use a separately granted `rmsp_` credential and `client.projects`; the example below uses a legacy `rmbr_` private-memory key.
+Follow [getting started](https://github.com/emartai/remembr/blob/main/docs/getting-started.md) to start the server and issue credentials. For shared spaces, use a separately granted `rmsp_` credential and `client.projects`. The example below uses an `rmbr_` key for private session memory.
 
 ## Quick Start
 

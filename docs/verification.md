@@ -40,10 +40,7 @@ experimental ranker answered four correctly. The experimental ranker remains
 opt-in. Its improved supporting-evidence recall on 233 questions has not
 established an answer-quality improvement or competitor superiority.
 
-On 14 November 2026, the registries served Python `remembr==0.2.1` and npm
-`@remembr/sdk@0.2.0`. The updated TypeScript source package is version 0.2.1;
-its publication remains pending authenticated npm publish access. Use the
-merged server source above to include migration 010 and the latest fixes.
+On 14 November 2026, the registries served Python 0.2.1 and npm 0.2.0. The current server and both SDKs are available as 0.2.2 from [GitHub](https://github.com/emartai/remembr/releases/tag/v0.2.2), [PyPI](https://pypi.org/project/remembr/0.2.2/) and [npm](https://www.npmjs.com/package/@remembr/sdk/v/0.2.2).
 
 A fresh package probe on 14 November built both SDKs from an archive of the
 verified PR head `7ff787509f0fc8974a9463862d7801ba02fac87c`. The resulting
@@ -56,7 +53,7 @@ does not establish npm publication.
 
 ## Earlier acceptance — 1 November 2026
 
-This records local acceptance of the source and SDK 0.2.1 candidates as of 1 November 2026. The source was subsequently merged as PR #73 and tagged v0.2.1; Python 0.2.1 is published on PyPI. npm 0.2.1 publication is pending. These checks do not establish production certification.
+This records local acceptance of the source and SDK 0.2.1 candidates as of 1 November 2026. The source was subsequently merged as PR #73 and tagged v0.2.1; Python 0.2.1 is published on PyPI. The current installation path is in [Start using Remembr](getting-started.md). These checks do not establish production certification.
 
 | Area | Completed verification |
 | --- | --- |
