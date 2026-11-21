@@ -124,9 +124,13 @@ not an API latency benchmark.
 After confirmation, `python -m benchmarks.local_answer_pilot prepare --work-dir
 <pilot-dir> --ranking-work-dir <ranking-dir> --data <pinned-locomo10.json>` freezes
 five seeded questions per confirmation conversation, including adversarial
-questions. Both variants receive the same 4,000-character reader ceiling. The
+questions. Set `--questions-per-conversation 25` for fifty paired questions.
+Cosine, BM25 and compact RRF/MMR receive the same 4,000-character reader ceiling. The
 already-installed `qwen3:1.7b` reader and `qwen3:8b` judge use different
-weights, sequentially, with 2,048-token windows and four CPU threads. This runner
+weights, sequentially, with 8,192-token windows and four CPU threads. The runner
+checks a conservative UTF-8 byte bound for Qwen3's tokenizer before inference
+and verifies model-native prompt token counts afterwards. It records evidence
+visible in the exact reader context. This runner
 does not download models; install the desired documented models locally first.
 
 Run its `answer`, `judge` and `summarize` phases with the same `--work-dir`.
@@ -134,8 +138,9 @@ Answers and judgments checkpoint independently. Changed model digests, options
 or frozen cases are rejected. Request failures and invalid judgments remain in
 the denominator. Ten synthetic judge controls run before dataset evaluation;
 passing them does not establish that the local judge is reliable on full LoCoMo.
-This ten-question custom-rubric pilot is not official accuracy or evidence of
-superiority over a competitor.
+The custom-rubric pilot supports a bounded comparison on the selected cases.
+It does not establish official full-corpus accuracy or competitor superiority.
+Changed window sizes and prompts require fresh run directories.
 
 `python -m benchmarks.verify_shared_recovery --work-dir <outside-checkout-dir>`
 uses the existing local `remembr-postgres` service and `remembr_default` network
@@ -162,9 +167,16 @@ The runtime is pinned to Ollama 0.35.1. The runner uses registry model
 `nomic-embed-text:v1.5`; the laptop's custom `publisher-f16` packaging is distinct,
 so compare candidates within a run and retain the recorded model digests.
 
-Only allowlisted aggregate JSON and Markdown are uploaded, retained for seven
-days. Raw QA, per-question responses, vectors, credentials and weights are
-excluded. Request failures, invalid judging or failed sanity controls make the
+Allowlisted aggregate JSON and Markdown are uploaded and retained for seven
+days. For private response review, generate a key outside the checkout using
+`python -m benchmarks.audit_artifact keygen --work-dir <private-review-dir>`.
+Pass only `public-key.txt` as the workflow's `audit_public_key` input. The optional
+review artifact is encrypted with AES-GCM and its key wrapped with RSA-OAEP;
+it is retained for three days. Keep `private-key.pem` on the reviewer's machine.
+Download the encrypted artifact and use the `unseal` command with `--source`,
+`--private-key` and a fresh outside-checkout `--work-dir`. Review files contain
+benchmark responses and source excerpts and must stay out of public Git.
+Request failures, invalid judging or failed sanity controls make the
 answer evaluation fail rather than silently dropping cases. The owned Ollama
 service is stopped in an `always()` cleanup step.
 

@@ -21,6 +21,10 @@ These candidate packages have not been published.
 
 ## Release candidate verification — 12 November 2026
 
+The follow-up [equal-context benchmark](research/equal-context-2026-11-21.md)
+completed 150 cases across three retrieval methods. The experimental ranker
+remains opt-in. The benchmark reports a separate [local competitor comparison](research/competitor-comparison-2026-11-16.md).
+
 [PR #75](https://github.com/emartai/remembr/pull/75) merged at
 `db027065bb06525deb50fac27612b81b4ec87156` after 25 applicable checks passed.
 The [fresh Linux installation](https://github.com/emartai/remembr/actions/runs/43182769513)

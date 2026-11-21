@@ -1,0 +1,416 @@
+{
+  "scope": "Runner-local exploratory evaluation; not official LoCoMo accuracy or a competitor ranking",
+  "source_commit": "c3019a4751b92c702c0007ade9c1f51eb34547ad",
+  "run_id": "44823831922",
+  "inference": "Ollama on this runner; no external LLM API",
+  "stages": {
+    "development": {
+      "protocol": {
+        "version": 2,
+        "embedding_model": "nomic-embed-text:v1.5",
+        "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+        "embedding_digest": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+        "prefixes": true,
+        "turns_per_chunk": 8,
+        "context_chars": 12000,
+        "compact_context_chars": 10000,
+        "development_indices": [
+          0
+        ],
+        "confirmation_indices": [
+          1,
+          2
+        ],
+        "question_selection": "all answerable questions with annotated evidence",
+        "variants": [
+          "cosine_8",
+          "rrf_8",
+          "mmr_8",
+          "rrf_mmr_8",
+          "cosine_16",
+          "rrf_compact_8",
+          "rrf_mmr_compact_8"
+        ],
+        "rrf_k": 60,
+        "candidate_depth": 40,
+        "mmr_lambda": 0.85,
+        "selection": "higher multi-hop recall, no overall recall loss, <=10% more mean tokens; choose highest multi-hop recall then all-evidence then fewer tokens"
+      },
+      "metrics": {
+        "cosine_8": {
+          "questions": 150,
+          "recall": 0.7394444444444445,
+          "all_evidence": 0.6733333333333333,
+          "multi_hop_questions": 32,
+          "multi_hop_recall": 0.4505208333333333,
+          "multi_hop_all_evidence": 0.1875,
+          "mean_context_tokens": 2238.8133333333335
+        },
+        "rrf_8": {
+          "questions": 150,
+          "recall": 0.83,
+          "all_evidence": 0.78,
+          "multi_hop_questions": 32,
+          "multi_hop_recall": 0.5625,
+          "multi_hop_all_evidence": 0.34375,
+          "mean_context_tokens": 2545.7466666666664
+        },
+        "mmr_8": {
+          "questions": 150,
+          "recall": 0.7433333333333333,
+          "all_evidence": 0.68,
+          "multi_hop_questions": 32,
+          "multi_hop_recall": 0.4375,
+          "multi_hop_all_evidence": 0.1875,
+          "mean_context_tokens": 2242.3133333333335
+        },
+        "rrf_mmr_8": {
+          "questions": 150,
+          "recall": 0.8316666666666667,
+          "all_evidence": 0.7866666666666666,
+          "multi_hop_questions": 32,
+          "multi_hop_recall": 0.5703125,
+          "multi_hop_all_evidence": 0.375,
+          "mean_context_tokens": 2537.76
+        },
+        "cosine_16": {
+          "questions": 150,
+          "recall": 0.7894444444444444,
+          "all_evidence": 0.7133333333333334,
+          "multi_hop_questions": 32,
+          "multi_hop_recall": 0.5286458333333334,
+          "multi_hop_all_evidence": 0.21875,
+          "mean_context_tokens": 3008.673333333333
+        },
+        "rrf_compact_8": {
+          "questions": 150,
+          "recall": 0.8261111111111111,
+          "all_evidence": 0.7733333333333333,
+          "multi_hop_questions": 32,
+          "multi_hop_recall": 0.5442708333333334,
+          "multi_hop_all_evidence": 0.3125,
+          "mean_context_tokens": 2365.4266666666667
+        },
+        "rrf_mmr_compact_8": {
+          "questions": 150,
+          "recall": 0.8294444444444444,
+          "all_evidence": 0.7866666666666666,
+          "multi_hop_questions": 32,
+          "multi_hop_recall": 0.5598958333333334,
+          "multi_hop_all_evidence": 0.375,
+          "mean_context_tokens": 2363.3933333333334
+        }
+      },
+      "scope": "Offline ranking; not Remembr API latency, answer accuracy or a competitor comparison"
+    },
+    "confirmation": {
+      "protocol": {
+        "version": 2,
+        "embedding_model": "nomic-embed-text:v1.5",
+        "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+        "embedding_digest": "0a109f422b47e3a30ba2b10eca18548e944e8a23073ee3f3e947efcf3c45e59f",
+        "prefixes": true,
+        "turns_per_chunk": 8,
+        "context_chars": 12000,
+        "compact_context_chars": 10000,
+        "development_indices": [
+          0
+        ],
+        "confirmation_indices": [
+          1,
+          2
+        ],
+        "question_selection": "all answerable questions with annotated evidence",
+        "variants": [
+          "cosine_8",
+          "rrf_8",
+          "mmr_8",
+          "rrf_mmr_8",
+          "cosine_16",
+          "rrf_compact_8",
+          "rrf_mmr_compact_8"
+        ],
+        "rrf_k": 60,
+        "candidate_depth": 40,
+        "mmr_lambda": 0.85,
+        "selection": "higher multi-hop recall, no overall recall loss, <=10% more mean tokens; choose highest multi-hop recall then all-evidence then fewer tokens"
+      },
+      "metrics": {
+        "cosine_8": {
+          "questions": 233,
+          "recall": 0.7405579399141631,
+          "all_evidence": 0.6824034334763949,
+          "multi_hop_questions": 42,
+          "multi_hop_recall": 0.513095238095238,
+          "multi_hop_all_evidence": 0.19047619047619047,
+          "mean_context_tokens": 2184.3605150214594
+        },
+        "rrf_mmr_compact_8": {
+          "questions": 233,
+          "recall": 0.8246065808297568,
+          "all_evidence": 0.7725321888412017,
+          "multi_hop_questions": 42,
+          "multi_hop_recall": 0.5924603174603175,
+          "multi_hop_all_evidence": 0.30952380952380953,
+          "mean_context_tokens": 2340.4763948497853
+        }
+      },
+      "scope": "Offline ranking; not Remembr API latency, answer accuracy or a competitor comparison"
+    },
+    "selection": {
+      "winner": "rrf_mmr_compact_8",
+      "development_sha256": "a1b87509317053a561048406d56105a3bd56575d0c889c7ad2b38e3e14751969"
+    },
+    "answer_pilot": {
+      "scope": "Small-model exploratory local pilot; not official LoCoMo accuracy or superiority evidence",
+      "controls_passed": 10,
+      "controls_attempted": 10,
+      "judge_sanity_passed": true,
+      "variants": {
+        "bm25_8": {
+          "expected_questions": 50,
+          "reader_attempts": 50,
+          "reader_errors": 0,
+          "reader_output_limit_hits": 0,
+          "judge_attempts": 50,
+          "invalid_judgments": 0,
+          "correct_count": 19,
+          "correct_fraction_all_expected": 0.38,
+          "evidence_questions": 39,
+          "exact_reader_context_recall": 0.6773504273504274,
+          "mean_prompt_tokens": 1126.44,
+          "max_prompt_tokens": 1239,
+          "categories": {
+            "1": {
+              "questions": 12,
+              "correct": 4
+            },
+            "2": {
+              "questions": 11,
+              "correct": 3
+            },
+            "3": {
+              "questions": 5,
+              "correct": 1
+            },
+            "4": {
+              "questions": 11,
+              "correct": 9
+            },
+            "5": {
+              "questions": 11,
+              "correct": 2
+            }
+          }
+        },
+        "rrf_mmr_compact_8": {
+          "expected_questions": 50,
+          "reader_attempts": 50,
+          "reader_errors": 0,
+          "reader_output_limit_hits": 0,
+          "judge_attempts": 50,
+          "invalid_judgments": 0,
+          "correct_count": 20,
+          "correct_fraction_all_expected": 0.4,
+          "evidence_questions": 39,
+          "exact_reader_context_recall": 0.6025641025641025,
+          "mean_prompt_tokens": 1141,
+          "max_prompt_tokens": 1265,
+          "categories": {
+            "1": {
+              "questions": 12,
+              "correct": 5
+            },
+            "2": {
+              "questions": 11,
+              "correct": 2
+            },
+            "3": {
+              "questions": 5,
+              "correct": 1
+            },
+            "4": {
+              "questions": 11,
+              "correct": 9
+            },
+            "5": {
+              "questions": 11,
+              "correct": 3
+            }
+          }
+        },
+        "cosine_8": {
+          "expected_questions": 50,
+          "reader_attempts": 50,
+          "reader_errors": 0,
+          "reader_output_limit_hits": 0,
+          "judge_attempts": 50,
+          "invalid_judgments": 0,
+          "correct_count": 19,
+          "correct_fraction_all_expected": 0.38,
+          "evidence_questions": 39,
+          "exact_reader_context_recall": 0.5726495726495726,
+          "mean_prompt_tokens": 1142.38,
+          "max_prompt_tokens": 1301,
+          "categories": {
+            "1": {
+              "questions": 12,
+              "correct": 3
+            },
+            "2": {
+              "questions": 11,
+              "correct": 2
+            },
+            "3": {
+              "questions": 5,
+              "correct": 2
+            },
+            "4": {
+              "questions": 11,
+              "correct": 8
+            },
+            "5": {
+              "questions": 11,
+              "correct": 4
+            }
+          }
+        }
+      }
+    },
+    "environment": {
+      "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+      "cpu_count": 4,
+      "ollama_version": "0.35.1",
+      "models": [
+        "nomic-embed-text:v1.5",
+        "qwen3:1.7b",
+        "qwen3:8b"
+      ]
+    },
+    "cpu_ranking": {
+      "scope": "Synthetic CPU-only ranking probe; never an end-to-end API latency benchmark.",
+      "platform": "Linux-7.0.0-1014-aws-x86_64-with-glibc2.39",
+      "cpu_count": 4,
+      "candidates": 200,
+      "dimensions": 768,
+      "seed": 42,
+      "repeats_ms": [
+        52.91340999997374,
+        54.66495899997881,
+        53.81786300006297
+      ],
+      "median_ms": 53.81786300006297,
+      "order_sha256": "75b9242687f5d07fafb08ead400e02fd4c2c6ab2c6b001e1135a0df16ea8aa69",
+      "source_sha256": "b9e8182ab0ef0cc31b30b709e9e4a6e1661b8cc76b81be196638a98c109be8c8"
+    }
+  },
+  "retrieval_complete": true,
+  "judge_calibration": {
+    "attempted": 10,
+    "passed": 10,
+    "controls": [
+      {
+        "index": 0,
+        "passed": true,
+        "expected": true,
+        "actual": true
+      },
+      {
+        "index": 1,
+        "passed": true,
+        "expected": false,
+        "actual": false
+      },
+      {
+        "index": 2,
+        "passed": true,
+        "expected": true,
+        "actual": true
+      },
+      {
+        "index": 3,
+        "passed": true,
+        "expected": false,
+        "actual": false
+      },
+      {
+        "index": 4,
+        "passed": true,
+        "expected": true,
+        "actual": true
+      },
+      {
+        "index": 5,
+        "passed": true,
+        "expected": false,
+        "actual": false
+      },
+      {
+        "index": 6,
+        "passed": true,
+        "expected": false,
+        "actual": false
+      },
+      {
+        "index": 7,
+        "passed": true,
+        "expected": true,
+        "actual": true
+      },
+      {
+        "index": 8,
+        "passed": true,
+        "expected": false,
+        "actual": false
+      },
+      {
+        "index": 9,
+        "passed": true,
+        "expected": true,
+        "actual": true
+      }
+    ],
+    "configuration": {
+      "model": "qwen3:8b",
+      "options": {
+        "temperature": 0,
+        "seed": 42,
+        "num_ctx": 8192,
+        "num_predict": 96,
+        "num_thread": 4,
+        "num_batch": 128
+      },
+      "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+      "controls_sha256": "ad7b666c70291a2484deec9b4074b08e7ee3994a496a4c85557ffcfc15f53dcf",
+      "prompt_sha256": "9c05307cbd4eb8f0e487c65a80f197b7b953873868cd2e4e944713a085b3f965"
+    }
+  },
+  "answer_configuration": {
+    "reader": {
+      "name": "qwen3:1.7b",
+      "digest": "8f68893c685c3ddff2aa3fffce2aa60a30bb2da65ca488b61fff134a4d1730e7"
+    },
+    "judge": {
+      "name": "qwen3:8b",
+      "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41"
+    },
+    "options": {
+      "temperature": 0,
+      "seed": 42,
+      "num_ctx": 8192,
+      "num_predict": 96,
+      "num_thread": 4,
+      "num_batch": 128
+    },
+    "cases_sha256": "70bd2c96e3389b692a7ef68d2656801e1d311f437e5bd792859c5c67c9e4ca3e",
+    "reader_context_chars": 4000,
+    "variants": [
+      "cosine_8",
+      "bm25_8",
+      "rrf_mmr_compact_8"
+    ],
+    "questions_per_conversation": 25,
+    "prompt_template_allowance": 1024
+  },
+  "answer_pilot_valid": true
+}
