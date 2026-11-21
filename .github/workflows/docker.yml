@@ -73,7 +73,7 @@ jobs:
       - name: Verify OpenClaw to Hermes to OpenClaw
         if: inputs.verify_agent_hosts
         run: |
-          "$RUNNER_TEMP/hermes-agent/.venv/bin/python" scripts/verify_mcp_hosts.py --bridge "$RUNNER_TEMP/remembr-mcp/bin/python"
+          "$RUNNER_TEMP/hermes-agent/.venv/bin/python" scripts/verify_mcp_hosts.py --bridge "$RUNNER_TEMP/remembr-mcp/bin/remembr-mcp"
 
       - name: Record runtime versions and migrations
         run: |

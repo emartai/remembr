@@ -137,7 +137,6 @@ def verify(bridge):
     def server(host):
         return {
             "command": str(bridge),
-            "args": ["-m", "remembr.mcp"],
             "env": {
                 "REMEMBR_URL": BASE,
                 "REMEMBR_SPACE_ID": space,
@@ -327,4 +326,6 @@ if __name__ == "__main__":
     if args.hermes:
         hermes()
     else:
-        verify(args.bridge.resolve(strict=True))
+        if not args.bridge or not args.bridge.is_file():
+            parser.error("--bridge must point to the installed remembr-mcp executable")
+        verify(args.bridge.absolute())
