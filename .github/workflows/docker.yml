@@ -7,6 +7,11 @@ on:
   pull_request:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      verify_agent_hosts:
+        description: Verify OpenClaw and Hermes MCP handoff on the disposable stack
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -39,6 +44,34 @@ jobs:
 
       - name: Verify the onboarding example and restart persistence
         run: python scripts/verify_shared_quickstart.py --recreate
+
+      - name: Install the published MCP bridge into an isolated environment
+        if: inputs.verify_agent_hosts
+        run: |
+          python -m venv "$RUNNER_TEMP/remembr-mcp"
+          "$RUNNER_TEMP/remembr-mcp/bin/python" -m pip install 'remembr[mcp]==0.2.2'
+
+      - uses: actions/setup-node@v4
+        if: inputs.verify_agent_hosts
+        with:
+          node-version: '24'
+
+      - uses: actions/setup-python@v5
+        if: inputs.verify_agent_hosts
+        with:
+          python-version: '3.14'
+
+      - name: Install agent hosts on the runner
+        if: inputs.verify_agent_hosts
+        run: |
+          npm install -g openclaw@2026.11.6
+          openclaw --version
+          python -m pip install 'hermes-agent[mcp] @ git+https://github.com/NousResearch/hermes-agent.git@v0.23.3'
+
+      - name: Verify OpenClaw to Hermes to OpenClaw
+        if: inputs.verify_agent_hosts
+        run: |
+          python scripts/verify_mcp_hosts.py --bridge "$RUNNER_TEMP/remembr-mcp/bin/python"
 
       - name: Record runtime versions and migrations
         run: |
