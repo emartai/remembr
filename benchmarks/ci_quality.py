@@ -135,7 +135,10 @@ def export(work):
     return report
 
 
-def evaluate(work, answers, questions_per_conversation=5):
+def evaluate(work, answers, questions_per_conversation=5, compare_readers=False):
+    if compare_readers:
+        from benchmarks.compare_readers import CANDIDATE
+
     command("benchmarks.ranking_performance", "--work-dir", str(work / "performance"))
     http = Http("http://127.0.0.1:11434", interval=0, timeout=1200)
     environment = {
@@ -146,6 +149,8 @@ def evaluate(work, answers, questions_per_conversation=5):
         if answers
         else [EMBEDDING_MODEL],
     }
+    if compare_readers:
+        environment["models"].append(CANDIDATE)
     write_json(work / "environment.json", environment)
     for model in environment["models"]:
         print(
@@ -195,8 +200,13 @@ def evaluate(work, answers, questions_per_conversation=5):
             "--questions-per-conversation",
             str(questions_per_conversation),
         )
-        for phase in ("answer", "judge", "summarize"):
-            command("benchmarks.local_answer_pilot", phase, "--work-dir", str(pilot))
+        if compare_readers:
+            command("benchmarks.compare_readers", "--work-dir", str(work))
+        else:
+            for phase in ("answer", "judge", "summarize"):
+                command(
+                    "benchmarks.local_answer_pilot", phase, "--work-dir", str(pilot)
+                )
 
 
 def main():
@@ -204,6 +214,7 @@ def main():
     parser.add_argument("phase", choices=("run", "report"))
     parser.add_argument("--work-dir", type=Path, required=True)
     parser.add_argument("--answers", action="store_true")
+    parser.add_argument("--compare-readers", action="store_true")
     parser.add_argument(
         "--questions-per-conversation", type=int, choices=(5, 25), default=5
     )
@@ -213,11 +224,18 @@ def main():
         export(work)
         return
     try:
-        evaluate(work, args.answers, args.questions_per_conversation)
+        evaluate(
+            work,
+            args.answers or args.compare_readers,
+            args.questions_per_conversation,
+            args.compare_readers,
+        )
     finally:
         report = export(work)
     if not report["retrieval_complete"] or (
-        args.answers and not report.get("answer_pilot_valid")
+        args.answers
+        and not args.compare_readers
+        and not report.get("answer_pilot_valid")
     ):
         raise SystemExit(
             "Quality evaluation incomplete or contains model/judge failures; inspect the aggregate artifact"

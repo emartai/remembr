@@ -14,6 +14,10 @@ on:
           - '5'
           - '25'
         default: '5'
+      compare_readers:
+        description: Compare Qwen3 1.7B and 4B Instruct on identical evidence
+        type: boolean
+        default: false
       audit_public_key:
         description: Optional base64 DER RSA public key for encrypted private review
         type: string
@@ -46,6 +50,7 @@ jobs:
       RUN_ROOT: /tmp/remembr-memory-quality
       RUN_ANSWERS: ${{ github.event_name == 'pull_request' || inputs.run_answers }}
       QUESTIONS_PER_CONVERSATION: ${{ inputs.questions_per_conversation || '5' }}
+      COMPARE_READERS: ${{ inputs.compare_readers }}
       BENCHMARK_AUDIT_PUBLIC_KEY: ${{ inputs.audit_public_key }}
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
@@ -62,6 +67,7 @@ jobs:
         run: |
           args=()
           if [[ "$RUN_ANSWERS" == "true" ]]; then args+=(--answers); fi
+          if [[ "$COMPARE_READERS" == "true" ]]; then args+=(--compare-readers); fi
           python -m benchmarks.ci_quality run --work-dir "$RUN_ROOT" --questions-per-conversation "$QUESTIONS_PER_CONVERSATION" "${args[@]}"
       - name: Write aggregate report even after failure
         if: always()
