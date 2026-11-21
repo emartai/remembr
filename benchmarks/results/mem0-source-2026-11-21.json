@@ -1,0 +1,72 @@
+{
+  "scope": "Mem0 source-storage mode (infer=False), same cached Nomic vectors and raw chunks. Fact extraction disabled. Offline evidence retrieval only. Previously evaluated conversations 1 and 2.",
+  "packages": {
+    "mem0ai": "2.2.1",
+    "qdrant-client": "1.20.0",
+    "ollama": "0.6.3"
+  },
+  "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+  "embedding_digest": "ae3dba817a77ebc3d953c00121d5817de015c77eeb969a114df46a1ffb1eb6fd",
+  "local_adapter_requests": {
+    "/api/tags": 1,
+    "/api/embed": 384
+  },
+  "metrics": [
+    {
+      "method": "mem0_source",
+      "context_chars": 4000,
+      "questions": 233,
+      "evidence_recall": 0.6064377682403433,
+      "all_evidence": 0.5579399141630901
+    },
+    {
+      "method": "mem0_source",
+      "context_chars": 10000,
+      "questions": 233,
+      "evidence_recall": 0.7613018597997139,
+      "all_evidence": 0.7124463519313304
+    },
+    {
+      "method": "cosine_8",
+      "context_chars": 4000,
+      "questions": 233,
+      "evidence_recall": 0.6064377682403433,
+      "all_evidence": 0.5579399141630901
+    },
+    {
+      "method": "cosine_8",
+      "context_chars": 10000,
+      "questions": 233,
+      "evidence_recall": 0.7405579399141631,
+      "all_evidence": 0.6824034334763949
+    },
+    {
+      "method": "bm25",
+      "context_chars": 4000,
+      "questions": 233,
+      "evidence_recall": 0.7357653791130186,
+      "all_evidence": 0.6995708154506438
+    },
+    {
+      "method": "bm25",
+      "context_chars": 10000,
+      "questions": 233,
+      "evidence_recall": 0.836623748211731,
+      "all_evidence": 0.7939914163090128
+    },
+    {
+      "method": "rrf_mmr_compact_8",
+      "context_chars": 4000,
+      "questions": 233,
+      "evidence_recall": 0.7187410586552218,
+      "all_evidence": 0.6738197424892703
+    },
+    {
+      "method": "rrf_mmr_compact_8",
+      "context_chars": 10000,
+      "questions": 233,
+      "evidence_recall": 0.8246065808297568,
+      "all_evidence": 0.7725321888412017
+    }
+  ]
+}

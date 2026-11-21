@@ -1,7 +1,6 @@
 # Remembr: competitive research and proposed build order
 
-Reviewed 8 November 2026. This is an engineering proposal, not a claim that
-Remembr has beaten these systems. Vendor results below have not been reproduced.
+Reviewed 8 and 11 November 2026. Vendor results below come from their publishers.
 
 ## What competitors establish
 
@@ -13,13 +12,15 @@ Remembr has beaten these systems. Vendor results below have not been reproduced.
 | Graphiti | Builds temporal knowledge graphs with hybrid search and reranking options. | Treat changing facts and historical validity as explicit retrieval problems. |
 | Letta | Documents shared memory repositories with version history and checks for conflicting changes. | Multi-agent updates need clear concurrency behavior and provenance. |
 | Supermemory | Documents APIs, coding-agent integrations, MCP and self-hosting. | Local hosting and multiple integrations alone do not establish a unique advantage. |
+| OpenViking | Agents can read a directory abstract, an overview, or the full source. Its repository links reproduction scripts and reports separate LoCoMo results for three agent integrations. | Test whether a short decision with an on-demand source costs fewer tokens across a complete handoff. Record which agent did the reading. |
 
 Sources: [Living Brain](https://livingbrain.com/),
 [Mem0 evaluation harness](https://github.com/mem0ai/memory-benchmarks),
 [Hindsight](https://github.com/vectorize-io/hindsight),
 [Graphiti](https://github.com/getzep/graphiti),
 [Letta shared repositories](https://docs.letta.com/agent-sdk/repositories),
-[Supermemory documentation](https://supermemory.ai/docs).
+[Supermemory coding agents](https://supermemory.ai/coding-agents/),
+[OpenViking](https://github.com/volcengine/OpenViking).
 
 ## Recommended product focus
 
@@ -85,6 +86,70 @@ hardware, concurrency and warm-up. Before claiming token savings, report answer
 quality at the same time and include the same prompt components. LongMemEval-S
 must be run separately for a claim against its 22.6× headline.
 
-We can launch a useful developer pilot with accurate feature claims while this
-research continues. A public claim to be the best available memory tool is not
-supported by the current evidence.
+## Experiments for the local developer pilot
+
+These are proposals in order of expected value to the pilot. Their ranking
+reflects existing Remembr evidence and implementation cost. Each needs a
+comparison on untouched tasks before it can support a product claim.
+
+1. **Recover the current decision with its source.** Start with the existing
+   correction and access-control APIs. Agent A records a decision referencing
+   a commit. Agent B corrects it with a newer source. Restart the worker and
+   API, revoke A, and ask C for the current decision and its evidence. Include
+   another space with the same project terminology and a different decision.
+   Score the decision, source and author separately. Count stale answers and
+   unauthorized reads, including direct reads by a known memory ID. A query
+   that returns no answer after revocation is correct only for the revoked
+   credential. This extends the [recorded live recovery checks](local-ranking-2026-11-10.md).
+2. **Read more evidence only when the task needs it.** Compare today's compact
+   retrieval with returning the recorded decision and source identifier first.
+   Let the agent request the authorized source detail in a second call. Test
+   simple decisions and questions requiring two sources. Count tokens and
+   elapsed time across *both* calls, verify citations, and include the cost of
+   examining the wrong source. Recheck authorization on every detail read.
+   Existing author-entered decision text makes this trial possible without an
+   extra generation model. [OpenViking's context layers](https://github.com/volcengine/OpenViking)
+3. **Handle edits from a stale session.** Start two agents from the same
+   decision. Have B correct it, then have A submit a different correction from
+   its older session. Repeat with simultaneous submissions in both orders.
+   Record responses and inspect history for silently lost edits. Compare the
+   current API with an expected-version check only if the trial exposes a
+   failure. [Letta shared repository versions](https://docs.letta.com/agent-sdk/repositories)
+
+## Comparing systems fairly
+
+| Question | Workload and comparison | What to report |
+| --- | --- | --- |
+| Do agents recover the right project decision? | Use the same synthetic decisions, revisions, distractors, identities and source references. Compare Remembr with a checked-in decision file and runnable competitors. Record manual instructions and any adapter that supplies missing behavior. A file is a baseline for recall only. | Per-task decision correctness, source correctness, stale answers, unauthorized reads and time to first successful handoff. Score each capability separately. |
+| Does better retrieval yield better answers? | Compare Remembr defaults, the experimental ranker, and available local competitor configurations. Ingest only original source turns. Freeze question IDs, document boundaries where supported, reader, answer budget, grading method and dataset version. Audit blinded paired answers against human labels, including disagreements and abstentions. | Counts per category, failures in the denominator, evidence recall, answer accuracy, paired gains and losses. Report uncertainty by conversation because questions within a conversation share evidence. |
+| How expensive is each approach on the same machine? | Run one system at a time. Record OS, CPU, RAM, model digests, warm-up and simultaneous users. Measure insertion to searchable, full retrieval request, and end-to-end answer separately. Run identical warm requests and cold-start trials. | Median and p95 latency with request counts, peak memory, input/output tokens across all calls and completed tasks. Record model work at ingestion as well as at query time. |
+| Can the competitor's headline be reproduced? | For Living Brain, match the 1,540 answerable LoCoMo questions for its accuracy claim. Run LongMemEval-S separately for context reduction and compare against the same full-context baseline. Keep hosted-only services as vendor-reported rows while inference must stay local. | List exact versions, models, scoring, coverage, and which settings differ. Leave comparisons with unavailable access or unknown methodology unmeasured. |
+
+For local baselines, start with the checked-in file and Remembr defaults, then
+Mem0 OSS and Graphiti with documented local providers. Add Hindsight and
+OpenViking using their supported local setups where resources allow. Inspect
+Letta and Supermemory separately for the shared-update and coding-agent
+workflows. Record setup errors, resource limits and exact editions alongside
+completed runs. The ChatAndBuild product in the benchmark row documents a
+hosted API and MCP service. Its public documentation reviewed here did not
+establish a self-hostable server. [Living Brain developer documentation](https://docs.livingbrain.com/)
+
+Use the original [LoCoMo](https://github.com/snap-research/locomo) and
+[LongMemEval](https://github.com/xiaowu0162/LongMemEval) protocols. Keep the
+three conversations already used during ranker selection and confirmation
+identified when reporting a full LoCoMo result. Report the remaining
+conversations separately so prior exposure is visible.
+
+## Launch order updated 11 November 2026
+
+1. Diagnose the evaluation failure, verify the fix and merge the reviewed code.
+2. Rehearse a clean installation and the cross-agent correction, restart and
+   revocation workflow against the merged commit.
+3. Finish the benchmark runs, review the judge against human-scored examples,
+   and document the results and limitations of each competitor comparison.
+4. Publish and install-check the Python and npm packages. Finish the quickstart,
+   compatibility notes, changelog and two-agent demo.
+5. Run the private pilot with 3–5 developers, including real account switching
+   and next-day recall. Fix the issues they encounter and repeat affected tests.
+6. Launch publicly with the verified packages, documentation and measured results.
+   The managed-cloud decision can follow once developers are using Remembr.

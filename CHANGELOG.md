@@ -9,9 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 0.2.2 candidate
+
 - Complete public account-to-agent onboarding and distinguish the published Python package from pending npm publication.
 - Verify the canonical bundled-Ollama stack on a clean runner, including the published SDK example and restart recall.
 - Add migration 010 to remove a stale 1024-dimensional HNSW index that rejected the default 768-dimensional model. Stored data is retained; retrieval uses exact vector search.
+- Retry failed shared-memory embeddings while retaining the memory ID, source and revision history.
+- Preserve ready embeddings when delayed worker failures arrive and avoid repeating completed jobs.
+- Add an opt-in compact RRF/MMR ranking mode for spaces with at most 200 ready, compatible memories. Default ranking remains weighted hybrid.
+- Add opt-in Nomic document/query task prefixes and reject incompatible embedding identities during retrieval.
+- Verify corrections shared by two independent credentials across container recreation and deny a revoked credential.
+- Add reproducible local-model evaluation and retrieval reports. Current results establish neither improved answer accuracy nor competitor superiority.
+
+Candidate packages are version 0.2.2. Publication is pending. See the
+[verification record](docs/verification.md) for completed checks and limits.
 
 ## [0.2.1] - 2026-11-02
 
@@ -33,7 +44,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Clean installation passed with native Ollama; the bundled Ollama image download remained unverified after network EOF failures.
 - See [verification](docs/verification.md) and [compatibility](docs/compatibility.md) for tested environments and scope. Earlier entries below are historical claims, not verification of this release.
 
-## [1.0.0] - 2026-02-25
+## Archived draft labelled 1.0.0 — 2026-02-25
+
+This historical draft predates the verified release process. No v1.0.0 tag
+appears in this checkout's release tags. Its production and test claims below
+are retained as historical text and are not acceptance evidence for the current
+release. Use the verification record linked above for tested capabilities.
 
 ### 🎉 Production Release
 
@@ -109,7 +125,7 @@ All adapters verified with end-to-end tests achieving 100% pass rate.
 
 ---
 
-## [0.1.0] - 2026-02-01
+## Archived draft labelled 0.1.0 — 2026-02-01
 
 ### 🚀 MVP Release
 
@@ -149,7 +165,7 @@ Initial release with core functionality and adapter ecosystem.
 
 ---
 
-## [Unreleased]
+## Archived roadmap draft
 
 ### Planned Features
 - Vector database support (Pinecone, Weaviate, Qdrant)
@@ -165,7 +181,7 @@ Initial release with core functionality and adapter ecosystem.
 
 ---
 
-## Version History
+## Archived draft version history
 
 - **1.0.0** (2026-02-25) - Production release with all adapters tested
 - **0.1.0** (2026-02-01) - MVP release with core functionality

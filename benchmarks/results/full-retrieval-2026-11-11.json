@@ -1,0 +1,45 @@
+{
+  "protocol": {
+    "dataset_sha256": "79fa87e90f04081343b8c8debecb80a9a6842b76a7aa537dc9fdf651ea698ff4",
+    "model": "nomic-embed-text:publisher-f16",
+    "digest": "ae3dba817a77ebc3d953c00121d5817de015c77eeb969a114df46a1ffb1eb6fd",
+    "conversations": 10,
+    "turns_per_chunk": 8,
+    "max_results": 8,
+    "context_chars": 10000,
+    "methods": [
+      "bm25",
+      "cosine",
+      "rrf_mmr_compact"
+    ],
+    "version": 1
+  },
+  "exclusions": {
+    "missing_evidence": 4,
+    "adversarial": 446
+  },
+  "metrics": {
+    "bm25": {
+      "questions": 1536,
+      "multi_hop_questions": 282,
+      "evidence_recall": 0.8120616015794276,
+      "all_evidence": 0.7532552083333334,
+      "multi_hop_recall": 0.49462069907198686
+    },
+    "cosine": {
+      "questions": 1536,
+      "multi_hop_questions": 282,
+      "evidence_recall": 0.697622771332832,
+      "all_evidence": 0.6334635416666666,
+      "multi_hop_recall": 0.4967035913984402
+    },
+    "rrf_mmr_compact": {
+      "questions": 1536,
+      "multi_hop_questions": 282,
+      "evidence_recall": 0.8060431438491132,
+      "all_evidence": 0.7428385416666666,
+      "multi_hop_recall": 0.5564888742380344
+    }
+  },
+  "scope": "Offline annotated evidence retrieval, including previously examined conversations. Equal character ceilings. No answer accuracy, latency, or vendor comparison."
+}

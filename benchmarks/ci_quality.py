@@ -67,6 +67,9 @@ def export(work):
             "options": frozen["options"],
             "cases_sha256": frozen["cases_sha256"],
             "reader_context_chars": frozen["reader_context_chars"],
+            "variants": frozen.get("variants"),
+            "questions_per_conversation": frozen["questions_per_conversation"],
+            "prompt_template_allowance": frozen.get("prompt_template_allowance"),
         }
     if answer:
         report["answer_pilot_valid"] = answer["judge_sanity_passed"] and all(
@@ -120,7 +123,7 @@ def export(work):
         ]
     lines += [
         "",
-        "Small related models and a ten-question custom rubric do not establish official accuracy. Raw cases, credentials, vectors and model weights are not included in this artifact.",
+        "Three paired retrieval arms use a custom rubric. Model-native prompt counts and conservative byte bounds guard the context window. Public JSON and Markdown contain aggregates only.",
     ]
     markdown = "\n".join(lines) + "\n"
     (public / "quality-summary.md").write_text(markdown, encoding="utf-8")
@@ -132,7 +135,7 @@ def export(work):
     return report
 
 
-def evaluate(work, answers):
+def evaluate(work, answers, questions_per_conversation=5):
     command("benchmarks.ranking_performance", "--work-dir", str(work / "performance"))
     http = Http("http://127.0.0.1:11434", interval=0, timeout=1200)
     environment = {
@@ -189,6 +192,8 @@ def evaluate(work, answers):
             READER_MODEL,
             "--judge-model",
             JUDGE_MODEL,
+            "--questions-per-conversation",
+            str(questions_per_conversation),
         )
         for phase in ("answer", "judge", "summarize"):
             command("benchmarks.local_answer_pilot", phase, "--work-dir", str(pilot))
@@ -199,13 +204,16 @@ def main():
     parser.add_argument("phase", choices=("run", "report"))
     parser.add_argument("--work-dir", type=Path, required=True)
     parser.add_argument("--answers", action="store_true")
+    parser.add_argument(
+        "--questions-per-conversation", type=int, choices=(5, 25), default=5
+    )
     args = parser.parse_args()
     work = state_paths(args.work_dir)
     if args.phase == "report":
         export(work)
         return
     try:
-        evaluate(work, args.answers)
+        evaluate(work, args.answers, args.questions_per_conversation)
     finally:
         report = export(work)
     if not report["retrieval_complete"] or (

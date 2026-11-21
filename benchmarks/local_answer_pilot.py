@@ -3,12 +3,15 @@
 import argparse
 import hashlib
 import json
+import statistics
 from pathlib import Path
 
 from benchmarks.locomo import (
     DATASET_SHA256,
+    TURN_ID,
     Http,
     chunks,
+    evidence_metrics,
     read_json,
     reader_messages,
     select_questions,
@@ -17,15 +20,32 @@ from benchmarks.locomo import (
     write_json,
 )
 from benchmarks.ranking_ablation import pack, rank
+from server.app.ranking import lexical_scores
 
 OPTIONS = {
     "temperature": 0,
     "seed": 42,
-    "num_ctx": 2048,
+    "num_ctx": 8192,
     "num_predict": 96,
     "num_thread": 4,
     "num_batch": 128,
 }
+PROMPT_TEMPLATE_ALLOWANCE = 1024
+
+
+def prompt_byte_upper_bound(messages):
+    """Qwen3 byte-level BPE needs at most one token per UTF-8 input byte.
+
+    Reserve 1,024 additional tokens for the fixed, short Ollama ChatML template.
+    This bound deliberately overestimates normal prose. Count actual prompt
+    tokens from Ollama as well; refuse oversized input before inference.
+    """
+    return (
+        sum(len(m["content"].encode("utf-8")) for m in messages)
+        + PROMPT_TEMPLATE_ALLOWANCE
+    )
+
+
 CONTROLS = [
     ("Which database?", "PostgreSQL", "PostgreSQL", False, True),
     ("Which database?", "PostgreSQL", "MongoDB", False, False),
@@ -135,6 +155,9 @@ def judge_messages(question, reference, answer, unanswerable):
 
 
 def complete(http, model, messages, structured=False):
+    bound = prompt_byte_upper_bound(messages)
+    if bound + OPTIONS["num_predict"] > OPTIONS["num_ctx"]:
+        raise ValueError("Prompt exceeds the conservative local-model context bound")
     body = {
         "model": model,
         "messages": messages,
@@ -146,9 +169,19 @@ def complete(http, model, messages, structured=False):
     if structured:
         body["format"] = structured if isinstance(structured, dict) else "json"
     response = http.call("POST", "/api/chat", body)
+    tokens = response.get("prompt_eval_count")
+    if (
+        type(tokens) is not int
+        or tokens <= 0
+        or tokens + OPTIONS["num_predict"] > OPTIONS["num_ctx"]
+    ):
+        raise ValueError("Missing or overflowing model-native prompt token count")
+    if tokens > bound:
+        raise ValueError("Model prompt exceeded the frozen token-bound assumption")
     return {
         "text": response["message"]["content"],
         "prompt_tokens": response.get("prompt_eval_count"),
+        "prompt_token_upper_bound": bound,
         "output_tokens": response.get("eval_count"),
         "done_reason": response.get("done_reason"),
         "total_seconds": response.get("total_duration", 0) / 1e9,
@@ -168,20 +201,32 @@ def prepare(args, work, http):
         raise ValueError("Pinned source bytes differ")
     models = {m["name"]: m for m in http.call("GET", "/api/tags")["models"]}
     reader, judge = args.reader_model, args.judge_model
+    if any(
+        models[name].get("details", {}).get("family") != "qwen3"
+        for name in (reader, judge)
+    ):
+        raise ValueError(
+            "This protocol's byte-token bound requires Qwen3 reader and judge models"
+        )
     if models[reader]["digest"] == models[judge]["digest"]:
         raise ValueError("Reader and judge weights must differ")
     manifest = {
         "dataset_sha256": DATASET_SHA256,
         "conversation_indices": [1, 2],
-        "questions_per_conversation": 5,
+        "questions_per_conversation": args.questions_per_conversation,
         "selection_seed": 42,
         "reader_context_chars": 4000,
+        "variants": ["cosine_8", "bm25_8", "rrf_mmr_compact_8"],
+        "prompt_template_allowance": PROMPT_TEMPLATE_ALLOWANCE,
         "reader": models[reader],
         "judge": models[judge],
         "options": OPTIONS,
+        "reader_prompt_sha256": hashlib.sha256(
+            json.dumps(reader_messages("question", "context")).encode()
+        ).hexdigest(),
         "winner": selection["winner"],
         "development_sha256": selection["development_sha256"],
-        "protocol": "exploratory two-small-model correctness pilot; not official scoring or superiority evidence",
+        "protocol": "version 2; frozen three-arm equal-context local correctness pilot",
     }
     if (work / "manifest.json").exists():
         raise ValueError(
@@ -210,7 +255,7 @@ def prepare(args, work, http):
         sample = samples[index]
         documents = [c["content"] for c in chunks(sample, 8)]
         vectors = [vector("search_document: " + d) for d in documents]
-        for question in select_questions([sample], 5, 42):
+        for question in select_questions([sample], args.questions_per_conversation, 42):
             # Adversarial queries were excluded from retrieval-only scoring; embed
             # their question text now, before loading the reader model.
             text = "search_query: " + question["question"]
@@ -222,8 +267,21 @@ def prepare(args, work, http):
                     {"model": embedding_name, "prompt": text},
                 )["embedding"]
             ranked = rank(question["question"], documents, cache[key], vectors)
-            for variant in dict.fromkeys(("cosine_8", selection["winner"])):
-                context, _ = pack(documents, ranked[variant], 4000)
+            scores = lexical_scores(question["question"], documents)
+            ranked["bm25_8"] = sorted(
+                (i for i, score in enumerate(scores) if score > 0),
+                key=lambda i: (-scores[i], i),
+            )[:8]
+            evidence = set(TURN_ID.findall(" ".join(question.get("evidence", []))))
+            for variant in dict.fromkeys(manifest["variants"]):
+                context, visible = pack(documents, ranked[variant], 4000)
+                bound = prompt_byte_upper_bound(
+                    reader_messages(question["question"], context)
+                )
+                if bound + OPTIONS["num_predict"] > OPTIONS["num_ctx"]:
+                    raise ValueError(
+                        "Frozen reader context would exceed the model window"
+                    )
                 rows.append(
                     {
                         "conversation_index": index,
@@ -233,6 +291,10 @@ def prepare(args, work, http):
                         "category": question["category"],
                         "reference": question.get("answer", "No information available"),
                         "context": context,
+                        "prompt_token_upper_bound": bound,
+                        "evidence": evidence_metrics(evidence, visible)
+                        if evidence and question["category"] != 5
+                        else None,
                     }
                 )
     write_json(parent / "embedding-ablation-vectors.json", cache)
@@ -253,6 +315,13 @@ def prepare(args, work, http):
 def verify_models(http, manifest):
     if manifest["options"] != OPTIONS:
         raise ValueError("Refuse changed generation options in a frozen pilot")
+    if (
+        manifest.get("reader_prompt_sha256")
+        != hashlib.sha256(
+            json.dumps(reader_messages("question", "context")).encode()
+        ).hexdigest()
+    ):
+        raise ValueError("Refuse a changed reader prompt in a frozen pilot")
     actual = {m["name"]: m["digest"] for m in http.call("GET", "/api/tags")["models"]}
     for role in ("reader", "judge"):
         if actual.get(manifest[role]["name"]) != manifest[role]["digest"]:
@@ -325,6 +394,7 @@ def calibrate_judge(work, http, model):
     )
     config = {
         "model": model,
+        "options": OPTIONS,
         "digest": info["digest"],
         "controls_sha256": hashlib.sha256(json.dumps(CONTROLS).encode()).hexdigest(),
         "prompt_sha256": hashlib.sha256(
@@ -440,6 +510,9 @@ def summarize(work):
             "expected_questions": expected,
             "reader_attempts": len(completed),
             "reader_errors": sum(bool(r.get("error")) for r in completed),
+            "reader_output_limit_hits": sum(
+                r.get("done_reason") == "length" for r in completed
+            ),
             "judge_attempts": len(selected),
             "invalid_judgments": sum(r["correct"] is None for r in selected),
             "correct_count": sum(r["correct"] is True for r in selected),
@@ -447,6 +520,46 @@ def summarize(work):
             / expected
             if expected
             else None,
+        }
+        evidence = [
+            r["evidence"]
+            for r in cases
+            if r["variant"] == variant and r.get("evidence")
+        ]
+        tokens = [
+            r["prompt_tokens"]
+            for r in completed
+            if not r.get("error") and r.get("prompt_tokens")
+        ]
+        report["variants"][variant].update(
+            evidence_questions=len(evidence),
+            exact_reader_context_recall=statistics.mean(
+                r["evidence_recall"] for r in evidence
+            )
+            if evidence
+            else None,
+            mean_prompt_tokens=statistics.mean(tokens) if tokens else None,
+            max_prompt_tokens=max(tokens) if tokens else None,
+        )
+        report["variants"][variant]["categories"] = {
+            str(category): {
+                "questions": sum(
+                    r.get("category") == category
+                    for r in cases
+                    if r["variant"] == variant
+                ),
+                "correct": sum(
+                    r.get("category") == category and r["correct"] is True
+                    for r in selected
+                ),
+            }
+            for category in sorted(
+                {
+                    r["category"]
+                    for r in cases
+                    if r["variant"] == variant and "category" in r
+                }
+            )
         }
     write_json(work / "summary.json", report)
     print(json.dumps(report, indent=2))
@@ -462,6 +575,9 @@ def main():
     parser.add_argument("--data", type=Path)
     parser.add_argument("--reader-model", default="qwen3:1.7b")
     parser.add_argument("--judge-model", default="qwen3:8b")
+    parser.add_argument(
+        "--questions-per-conversation", type=int, choices=(5, 25), default=5
+    )
     args = parser.parse_args()
     work = state_paths(args.work_dir)
     http = Http("http://127.0.0.1:11434", interval=0, timeout=180)
