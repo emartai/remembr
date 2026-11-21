@@ -1,8 +1,8 @@
 # Remembr
 
-Remembr is persistent memory infrastructure for AI systems. It gives agents a clean `store -> search -> delete` loop, session-aware short-term context, scoped multi-tenant isolation, and a self-hosted stack that starts locally with one command.
+Remembr is a self-hosted, open-source memory layer for AI agents. One agent can save a project decision, another can correct it, and both can retrieve the latest version with its source and authenticated author. The default Docker setup uses local Ollama embeddings for retrieval. Remembr needs no external inference API key in this setup. Each agent uses its own configured model for reasoning.
 
-Version 0.2.1 is released on GitHub and PyPI. npm 0.2.1 is pending; the TypeScript source package includes the new shared-space APIs. Remembr Cloud is planned, not yet available.
+Remembr 0.2.2 is available on [GitHub](https://github.com/emartai/remembr/releases/tag/v0.2.2), [PyPI](https://pypi.org/project/remembr/0.2.2/) and [npm](https://www.npmjs.com/package/@remembr/sdk/v/0.2.2). Follow the [developer pilot](pilot.md).
 
 Follow [Start using Remembr](getting-started.md) for prerequisites, account creation, private versus shared credentials, and your first agent memory. [Shared project memory](shared-project-memory.md) and the [MCP bridge](agent-connections.md) connect explicitly granted agents across runs.
 

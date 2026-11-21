@@ -9,6 +9,7 @@ const sidebars: SidebarsConfig = {
       collapsed: false,
       items: [
         'getting-started',
+        'pilot',
         'local-setup',
         'shared-project-memory',
         'agent-connections',

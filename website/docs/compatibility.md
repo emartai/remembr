@@ -1,5 +1,7 @@
 # Verified environment
 
+Use the 0.2.2 server and the published Python and TypeScript packages from [GitHub](https://github.com/emartai/remembr/releases/tag/v0.2.2), [PyPI](https://pypi.org/project/remembr/0.2.2/) and [npm](https://www.npmjs.com/package/@remembr/sdk/v/0.2.2). Earlier entries describe the versions tested at the time.
+
 See the public [verification record](verification.md) for acceptance results and limits. Company-workspace paths below identify private maintainer records and are not required to use Remembr.
 
 Local verification on 29 October 2026 used the following versions. These are observed test environments, not a certification of every version allowed by dependency ranges.
@@ -26,7 +28,7 @@ The Windows test suite emitted asyncpg teardown/deprecation warnings. See the lo
 
 See [Local setup](local-setup.md) for the verified startup flow and configuration requirements.
 
-Clean-install/package acceptance on 1 November 2026 used a new source copy, empty PostgreSQL/Redis volumes, migrations 001–009, canonical Docker images and a separately downloaded native Ollama `nomic-embed-text` model. Installed Python 0.2.1 wheel/sdist, npm 0.2.1 CommonJS/ESM and the installed MCP console passed live workflows; the quickstart smoke also passed. Windows consumers used Python 3.11.9 and Node 22.21.1. The fresh Linux API used Python 3.11.18, FastAPI 0.162.0, SQLAlchemy 2.1.6, asyncpg 0.32.0, Redis client 6.4.0, Celery 5.6.3 and tiktoken 0.14.0. Full environment and archive hashes are in `openpeople/workspace/research/remembr-clean-install-2026-11-01/REPORT.md` in the company workspace. The bundled Ollama image download remained unverified after premature EOF; the test build required temporary host-resolved DNS entries. Python 0.2.1 is now published on PyPI and the server source is tagged v0.2.1. npm 0.2.1 publication remains pending; use its source archive for the new project APIs.
+Clean-install/package acceptance on 1 November 2026 used a new source copy, empty PostgreSQL/Redis volumes, migrations 001–009, canonical Docker images and a separately downloaded native Ollama `nomic-embed-text` model. Installed Python 0.2.1 wheel/sdist, npm 0.2.1 CommonJS/ESM and the installed MCP console passed live workflows; the quickstart smoke also passed. Windows consumers used Python 3.11.9 and Node 22.21.1. The fresh Linux API used Python 3.11.18, FastAPI 0.162.0, SQLAlchemy 2.1.6, asyncpg 0.32.0, Redis client 6.4.0, Celery 5.6.3 and tiktoken 0.14.0. Full environment and archive hashes are in `openpeople/workspace/research/remembr-clean-install-2026-11-01/REPORT.md` in the company workspace. The bundled Ollama image download remained unverified after premature EOF; the test build required temporary host-resolved DNS entries. For current onboarding, use the 0.2.2 packages from [GitHub](https://github.com/emartai/remembr/releases/tag/v0.2.2), [PyPI](https://pypi.org/project/remembr/0.2.2/) and [npm](https://www.npmjs.com/package/@remembr/sdk/v/0.2.2).
 
 
 ## Default Docker acceptance — 4 November 2026
@@ -36,3 +38,7 @@ The [clean Ubuntu runner acceptance](https://github.com/emartai/remembr/actions/
 This run discovered a retained 1024-dimensional HNSW index left behind by the earlier column-widening migration. Migration 010 removes it without deleting memories or vectors, allowing the default 768-dimensional model and other dimensions to be stored. Private vector retrieval uses exact search after this change; large-data ANN performance is not established. The correction is in the current source, not the original v0.2.1 server tag. Earlier native-install checks did not establish that the untouched 001–009 migration path worked for default-model writes.
 
 The Windows download retry still ended with premature EOF, so this establishes clean Linux installation rather than a completed bundled-Ollama installation on that laptop. See [local setup](local-setup.md) for repeatable commands.
+
+## OpenClaw and Hermes — 21 November 2026
+
+The [GitHub Actions handoff](https://github.com/emartai/remembr/actions/runs/44905730763) used the published Remembr 0.2.2 MCP bridge, OpenClaw 2026.11.10-beta.1 and Hermes Agent v0.23.3. Direct tool calls verified discovery, a cross-agent correction, recall after API and worker recreation, authenticated authorship and credential revocation. OpenClaw 2026.11.6 passed discovery. The full HTTP tool handoff used the beta. Model-driven tool selection, Grok Bot and Dot were outside this check.

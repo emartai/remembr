@@ -7,7 +7,7 @@ Create a shared space and separate principals first; see [shared project memory]
 In a Python 3.11+ virtual environment, install the published bridge:
 
 ```powershell
-python -m pip install 'remembr[mcp]==0.2.1'
+python -m pip install 'remembr[mcp]==0.2.2'
 $env:REMEMBR_URL = 'http://localhost:8000'
 $env:REMEMBR_SPACE_ID = '<space UUID>'
 $env:REMEMBR_API_KEY = '<this agent connection’s rmsp_ credential>'
@@ -80,6 +80,8 @@ The MCP server publishes these instructions; also include them in a host's proje
 
 ## Acceptance sequence
 
+[Follow the runnable example](https://github.com/emartai/remembr/tree/main/examples/shared-project-memory).
+
 1. A separate LangGraph process stores a unique synthetic finding with principal A.
 2. A real Claude Code session launches a fresh MCP process with principal B, retrieves the finding and appends a source-linked correction.
 3. After recreating the API and worker containers while retaining volumes, a real Codex session launches a fresh MCP process with principal C, retrieves the active correction and inspects its predecessor.
@@ -89,6 +91,7 @@ The MCP server publishes these instructions; also include them in a host's proje
 Test reports record protocol-level checks separately from actual host sessions. No hosted model API is needed for the deterministic graph and protocol checks. Host reasoning tests use each host's configured account and may require its login and network access.
 
 This combined sequence passed locally on 31 October 2026 with LangGraph 1.2.14, Claude Code 2.1.296, Codex CLI 0.166.0-alpha.5.1 and MCP Python SDK 1.30.0. Codex had a read-only space grant, and recalled a verification value that was not present in its prompt. Read-only writes were denied, grant removal took effect immediately, and revoked credentials were rejected. See the company workspace evidence in `openpeople/workspace/research/remembr-runtime-2026-10-31/` for client logs, changed container IDs and cleanup results. The checked configuration does not establish compatibility with every allowed client version.
+
 ## Several accounts or client profiles
 
 Remembr credentials identify agent connections independently of the model

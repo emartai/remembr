@@ -7,7 +7,7 @@ Create a shared space and separate principals first; see [shared project memory]
 In a Python 3.11+ virtual environment, install the published bridge:
 
 ```powershell
-python -m pip install 'remembr[mcp]==0.2.1'
+python -m pip install 'remembr[mcp]==0.2.2'
 $env:REMEMBR_URL = 'http://localhost:8000'
 $env:REMEMBR_SPACE_ID = '<space UUID>'
 $env:REMEMBR_API_KEY = '<this agent connection’s rmsp_ credential>'
@@ -79,6 +79,8 @@ The MCP server publishes these instructions; also include them in a host's proje
 - A correction is a new record referencing its predecessor. Inspect state and sources; recency alone does not establish truth.
 
 ## Acceptance sequence
+
+[Follow the runnable example](https://github.com/emartai/remembr/tree/main/examples/shared-project-memory).
 
 1. A separate LangGraph process stores a unique synthetic finding with principal A.
 2. A real Claude Code session launches a fresh MCP process with principal B, retrieves the finding and appends a source-linked correction.

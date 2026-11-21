@@ -6,177 +6,39 @@
 [![License](https://img.shields.io/github/license/emartai/remembr)](LICENSE)
 [![Python versions](https://img.shields.io/pypi/pyversions/remembr)](https://pypi.org/project/remembr/)
 
-Remembr gives AI agents durable, searchable memory with a `store`, `search`, and `delete` workflow, session-aware context, and a self-hosted stack with local embeddings.
+Remembr is a self-hosted, open-source memory layer for AI agents. One agent can save a project decision, another can correct it, and both can retrieve the latest version with its source and authenticated author.
 
-## Quick Start
+**LangGraph saves a decision → Claude Code corrects it → Codex recalls the correction after a restart.** Each agent uses a separate credential to access the same project space. Use the [Memory Explorer](docs/shared-project-memory.md#explorer) to inspect current and previous decisions.
 
-```bash
-git clone https://github.com/emartai/remembr.git
+[Run the handoff](examples/shared-project-memory/) · [Join the developer pilot](docs/pilot.md)
+
+## Quick start
+
+Use Python 3.11+, Docker Compose v2 and a running Linux container engine. The first run downloads container images and an embedding model.
+
+```sh
+git clone --branch v0.2.2 https://github.com/emartai/remembr.git
 cd remembr
 python scripts/local_setup.py
 python scripts/smoke_test.py
 ```
 
-Requires Python 3.11+, Docker Compose v2, a running Linux container engine, and internet access for the initial images, dependencies and model download. Setup creates `.env` if needed, generates a signing secret, and starts PostgreSQL, Redis, PgBouncer, Ollama, migrations, the API and workers. Existing secrets and data are retained. The smoke test creates local test accounts and verifies queued embeddings, retrieval, access isolation and deletion.
+The smoke test exercises private memory and prints its result. Follow [Start using Remembr](docs/getting-started.md) to create an account and open the explorer at `http://localhost:8000/explorer`. Create a project space, issue a credential for each agent, and [run the shared-memory handoff](examples/shared-project-memory/). When finished, run `docker compose --profile ollama down` to stop the stack and keep its volumes.
 
-`EMBEDDING_PROVIDER=ollama` is the Docker default; `sentence_transformers` is the bare Python default and needs its optional dependency installed. No external inference API key is required for either local provider. `/health` checks HTTP liveness; `/ready` checks the memory pipeline and performs a short embedding request.
+The default Docker setup uses local Ollama embeddings for retrieval. Remembr needs no external inference API key in this setup. Each agent uses its own configured model for reasoning.
 
-See [QUICKSTART.md](QUICKSTART.md) for the full self-hosted walkthrough.
+## Connect your agents
 
-See [Verified environment](docs/compatibility.md) for tested SDK/framework versions and the scope of local verification.
+Remembr 0.2.2 is available on [GitHub](https://github.com/emartai/remembr/releases/tag/v0.2.2), [PyPI](https://pypi.org/project/remembr/0.2.2/) and [npm](https://www.npmjs.com/package/@remembr/sdk/v/0.2.2).
 
-## Release status
+| I want to | Start here |
+| --- | --- |
+| Share project memory from a Python or TypeScript app | Install `remembr==0.2.2` or `@remembr/sdk@0.2.2` and use [project spaces](docs/shared-project-memory.md#sdks). |
+| Connect Claude Code, Codex, or another MCP host | Install `remembr[mcp]==0.2.2` and follow the [agent connection guide](docs/agent-connections.md). |
+| Add private session memory to an application | See the [Python SDK](sdk/python/) or [TypeScript SDK](sdk/typescript/) for store, search and delete examples. |
+| Check an integration or framework version | See the [verified environments](docs/compatibility.md) and [framework quickstarts](https://emartai.github.io/remembr/docs/quickstart/langgraph). |
 
-Version 0.2.1 is [released on GitHub](https://github.com/emartai/remembr/releases/tag/v0.2.1) and [published on PyPI](https://pypi.org/project/remembr/0.2.1/). Current source prepares the server and both SDKs for version 0.2.2; publication is pending. npm 0.2.0 does not include the new project APIs. Build the TypeScript package from source to use shared spaces today. Remembr Cloud is planned, not yet available.
+## Documentation and feedback
 
-Use the current server source for migration 010, which fixes a legacy vector-index constraint affecting fresh local-model installations. The earlier v0.2.1 server tag does not include that fix; the published Python SDK remains 0.2.1.
-
-Follow [Start using Remembr](docs/getting-started.md) to create your account, choose private or shared memory, connect an agent and retrieve its first memory.
-
-## Shared project memory
-
-Separate agent credentials can share explicitly granted project spaces. Existing private episodes
-stay private. See [shared project memory](docs/shared-project-memory.md) for permissions, authorship,
-corrections, expiry and retrieval budgets, and [agent connections](docs/agent-connections.md) for the
-local MCP bridge and LangGraph/Claude Code/Codex setup. Open `/explorer` on your running server to
-browse and manage permitted memory. These additions are included in the 0.2.1 server source and Python SDK.
-
-## Install The SDKs
-
-```bash
-python -m pip install "remembr==0.2.1"
-# For MCP clients:
-python -m pip install "remembr[mcp]==0.2.1"
-```
-
-For TypeScript, use the source-package instructions in [getting started](docs/getting-started.md#5-connect-an-mcp-client-or-typescript-app) until npm 0.2.2 is published.
-
-## Python Example
-
-```python
-import asyncio
-
-from remembr import RemembrClient
-
-
-async def main() -> None:
-    async with RemembrClient(
-        api_key="your-api-key",
-        base_url="http://localhost:8000/api/v1",
-    ) as client:
-        session = await client.create_session(
-            metadata={"user": "demo", "context": "support"}
-        )
-
-        episode = await client.store(
-            content="User prefers email notifications on Fridays",
-            role="user",
-            session_id=session.session_id,
-            tags=["preference", "notification"],
-        )
-
-        for _ in range(60):
-            status = await client.arequest("GET", f"/memory/{episode.episode_id}/status")
-            if status["embedding_status"] == "ready":
-                break
-            if status["embedding_status"] == "failed":
-                raise RuntimeError("Embedding failed; inspect worker logs")
-            await asyncio.sleep(1)
-        else:
-            raise TimeoutError("Embedding did not become ready")
-
-        results = await client.search(
-            query="When should I send notifications?",
-            session_id=session.session_id,
-            limit=5,
-            search_mode="hybrid",
-            weights={"semantic": 0.6, "keyword": 0.3, "recency": 0.1},
-        )
-
-        for memory in results.results:
-            print(f"[{memory.role}] {memory.content} (score: {memory.score:.3f})")
-
-
-asyncio.run(main())
-```
-
-## TypeScript Example
-
-```typescript
-import { RemembrClient } from '@remembr/sdk';
-
-async function main() {
-  const client = new RemembrClient({
-    apiKey: process.env.REMEMBR_API_KEY!,
-    baseUrl: 'http://localhost:8000/api/v1'
-  });
-
-  const session = await client.createSession({
-    user: 'demo',
-    context: 'support'
-  });
-
-  const episode = await client.store({
-    content: 'User prefers dark mode interface',
-    role: 'user',
-    sessionId: session.session_id,
-    tags: ['preference', 'ui']
-  });
-
-  const deadline = Date.now() + 60_000;
-  while (true) {
-    const response = await fetch(
-      `http://localhost:8000/api/v1/memory/${episode.episode_id}/status`,
-      { headers: { 'X-API-Key': process.env.REMEMBR_API_KEY! } }
-    );
-    if (!response.ok) throw new Error(`Status check failed: ${response.status}`);
-    const { data } = await response.json();
-    if (data.embedding_status === 'ready') break;
-    if (data.embedding_status === 'failed') throw new Error('Embedding failed');
-    if (Date.now() >= deadline) throw new Error('Embedding processing timed out');
-    await new Promise(resolve => setTimeout(resolve, 1000));
-  }
-
-  const results = await client.search({
-    query: 'What are the user UI preferences?',
-    sessionId: session.session_id,
-    limit: 5,
-    searchMode: 'hybrid',
-    weights: { semantic: 0.6, keyword: 0.3, recency: 0.1 }
-  });
-
-  results.results.forEach((memory) => {
-    console.log(`[${memory.role}] ${memory.content} (score: ${memory.score})`);
-  });
-}
-
-main();
-```
-
-## Environment Variables
-
-| Variable | Purpose | Required | Default |
-| --- | --- | --- | --- |
-| `DATABASE_URL` | PostgreSQL connection string | Yes | `postgresql://postgres:postgres@localhost:5432/remembr` |
-| `REDIS_URL` | Redis connection string | Yes | `redis://localhost:6379` |
-| `SECRET_KEY` | JWT signing secret | Yes | None |
-| `EMBEDDING_PROVIDER` | Embedding backend: `sentence_transformers`, `jina`, `ollama`, or `openai` | Yes | `sentence_transformers` |
-| `SENTENCE_TRANSFORMERS_MODEL` | Local sentence-transformers model name | No | `all-MiniLM-L6-v2` |
-| `JINA_API_KEY` | Jina API key when `EMBEDDING_PROVIDER=jina` | No | None |
-| `JINA_EMBEDDING_MODEL` | Jina embedding model | No | `jina-embeddings-v3` |
-| `OLLAMA_BASE_URL` | Ollama base URL when `EMBEDDING_PROVIDER=ollama` | No | `http://localhost:11434` |
-| `OLLAMA_EMBEDDING_MODEL` | Ollama embedding model | No | `nomic-embed-text` |
-| `OPENAI_API_KEY` | OpenAI API key when `EMBEDDING_PROVIDER=openai` | No | None |
-| `OPENAI_EMBEDDING_MODEL` | OpenAI embedding model | No | `text-embedding-3-small` |
-| `OTEL_ENABLED` | Enable OpenTelemetry export | No | `false` |
-| `OTEL_EXPORTER_ENDPOINT` | OTLP exporter endpoint | No | None |
-
-## Docs
-
-Full documentation: **https://emartai.github.io/remembr/**
-
-- [Framework quickstarts](https://emartai.github.io/remembr/docs/quickstart/langchain)
-- [API reference](https://emartai.github.io/remembr/docs/api-reference)
-- [Self-hosting guide](https://emartai.github.io/remembr/docs/self-hosted)
-- [Python SDK README](sdk/python/README.md)
-- [TypeScript SDK README](sdk/typescript/README.md)
+- [Self-hosting and configuration](docs/local-setup.md) · [API reference](docs/api-reference.md) · [Verification](docs/verification.md)
+- [Report an issue](https://github.com/emartai/remembr/issues) · [Contribute](CONTRIBUTING.md) · [MIT license](LICENSE)
