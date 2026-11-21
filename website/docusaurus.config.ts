@@ -4,7 +4,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
   title: 'Remembr',
-  tagline: 'Persistent memory infrastructure for AI agents',
+  tagline: 'Self-hosted, open-source memory for AI agents',
   favicon: 'img/favicon.ico',
 
   url: 'https://emartai.github.io',
@@ -78,7 +78,7 @@ const config: Config = {
         {
           title: 'Docs',
           items: [
-            { label: 'Quick Start', to: '/docs/quickstart/langchain' },
+            { label: 'Quick Start', to: '/docs/getting-started' },
             { label: 'API Reference', to: '/docs/api-reference' },
             { label: 'Self-Hosting', to: '/docs/self-hosted' },
           ],

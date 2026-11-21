@@ -7,40 +7,39 @@ const features = [
   {
     title: 'Quick Start',
     icon: '⚡',
-    description: 'Add persistent memory to your agent in under 5 minutes.',
-    link: '/remembr/docs/quickstart/langchain',
+    description: 'Start the local server, create a space and connect your first agent.',
+    link: '/docs/getting-started',
   },
   {
-    title: '8 Framework Adapters',
+    title: 'Shared Project Memory',
     icon: '🔌',
-    description:
-      'Native adapters for LangChain, LangGraph, CrewAI, AutoGen, LlamaIndex, Pydantic AI, OpenAI Agents, and Haystack.',
-    link: '/remembr/docs/quickstart/langchain',
+    description: 'Share project decisions across agents with separate credentials and named revisions.',
+    link: '/docs/shared-project-memory',
   },
   {
     title: 'API Reference',
     icon: '📖',
-    description: 'Every endpoint, every parameter, every response shape documented.',
-    link: '/remembr/docs/api-reference',
+    description: 'Explore the REST endpoints for authentication, sessions and project memory.',
+    link: '/docs/api-reference',
   },
   {
     title: 'Self-Hosting',
     icon: '🐳',
-    description: 'One command. No API keys required. Runs fully local with Ollama embeddings.',
-    link: '/remembr/docs/self-hosted',
+    description: 'Run the memory server and Ollama embeddings on your own machine or server.',
+    link: '/docs/self-hosted',
   },
   {
     title: 'Hybrid Search',
     icon: '🔍',
-    description: 'Semantic + BM25 + recency scoring with configurable weights.',
-    link: '/remembr/docs/concepts/search-modes',
+    description: 'Search by meaning, keyword or a combination of the two.',
+    link: '/docs/concepts/search-modes',
   },
   {
-    title: 'GDPR Compliant',
+    title: 'Data Controls',
     icon: '🛡️',
     description:
       'Soft deletes, hard deletes, export, and targeted erasure at every scope level.',
-    link: '/remembr/docs/cookbook/gdpr-deletion',
+    link: '/docs/cookbook/gdpr-deletion',
   },
 ];
 
@@ -53,22 +52,22 @@ export default function Home() {
         <div className={styles.hero}>
           <h1 className={styles.heroTitle}>Remembr</h1>
           <p className={styles.heroSubtitle}>
-            Persistent memory infrastructure for AI agents.
+            Self-hosted, open-source memory for AI agents.
             <br />
-            Store, search, and delete memories across sessions — with one command to self-host.
+            Save a decision with one agent and pick it up with another.
           </p>
           <div className={styles.heroCtas}>
-            <Link className={styles.ctaPrimary} to="/remembr/docs/quickstart/langchain">
+            <Link className={styles.ctaPrimary} to="/docs/getting-started">
               Get Started →
             </Link>
-            <Link className={styles.ctaSecondary} to="https://github.com/emartai/remembr">
-              View on GitHub
+            <Link className={styles.ctaSecondary} to="/docs/pilot">
+              Try the developer pilot
             </Link>
           </div>
           <div className={styles.heroInstall}>
-            <code>pip install remembr</code>
+            <code>python -m pip install remembr==0.2.2</code>
             <span className={styles.separator}>·</span>
-            <code>npm install @remembr/sdk</code>
+            <code>npm install @remembr/sdk@0.2.2</code>
           </div>
         </div>
 
@@ -87,25 +86,23 @@ export default function Home() {
 
         {/* Code example */}
         <div className={styles.codeSection}>
-          <h2>Dead simple API</h2>
-          <pre className={styles.codeBlock}>{`from remembr import RemembrClient
+          <h2>Find the same decision from two agents</h2>
+          <pre className={styles.codeBlock}>{`import os
+from remembr import RemembrClient
 
-async with RemembrClient(api_key="...", base_url="http://localhost:8000/api/v1") as client:
-    session = await client.create_session(metadata={"user": "alice"})
+space = os.environ["REMEMBR_SPACE_ID"]
+url = "http://localhost:8000/api/v1"
+writer = RemembrClient(api_key=os.environ["REMEMBR_WRITER_KEY"], base_url=url)
+reader = RemembrClient(api_key=os.environ["REMEMBR_READER_KEY"], base_url=url)
 
-    await client.store(
-        "Alice prefers weekly billing summaries on Fridays.",
-        role="user",
-        session_id=session.session_id,
-        tags=["kind:preference", "topic:billing"],
-    )
-
-    results = await client.search(
-        "When should billing summaries be sent?",
-        session_id=session.session_id,
-        search_mode="hybrid",
-    )
-    print(results.results[0].content)`}</pre>
+writer.projects.store(
+    space,
+    "Project storage uses PostgreSQL.",
+    idempotency_key="storage-v1",
+    source_ref="design-notes",
+)
+results = reader.projects.search(space, "PostgreSQL", mode="keyword")
+print(results["results"][0]["content"])`}</pre>
         </div>
       </main>
     </Layout>
